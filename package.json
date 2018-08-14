@@ -1,0 +1,11 @@
+{
+  "name": "ts-auto-guard",
+  "version": "0.0.0",
+  "description": "Automatically generate type guard functions from TypeScript interfaces",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rhys van der Waerden",
+  "license": "MIT"
+}
