@@ -1,7 +1,8 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type } from 'ts-simple-ast'
+import Project, { InterfaceDeclaration, PropertySignature, Type, SourceFile } from 'ts-simple-ast'
 import { camelCase, upperFirst, flatMap, endsWith } from "lodash"
 import Path from "path"
 import { BaseError } from "make-error"
+import fs from "fs"
 
 // -- Error types --
 
@@ -22,14 +23,6 @@ function trimExtension(path: string): string {
         throw new TypeError(`Could not trim extenstion from path "${path}"`)
     }
     return match[0]
-}
-
-function interfaceToName(iface: InterfaceDeclaration): string {
-    if (iface.isDefaultExport) {
-        const fileName = trimExtension(Path.basename(iface.getSourceFile().getFilePath()));
-        return upperFirst(camelCase(fileName))
-    }
-    return iface.getName()
 }
 
 function outFilePath(sourcePath: string) {
@@ -142,7 +135,7 @@ ${indent(ands(...conditions), 2)}
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
 
 function processInterface(iface: InterfaceDeclaration): string {
-    const interfaceName = interfaceToName(iface);
+    const interfaceName = iface.getName();
     const functionName = `is${interfaceName}`;
     const type = iface.getType();
     isInterfaceFunctionNames.set(type, functionName);
@@ -167,7 +160,7 @@ function processInterface(iface: InterfaceDeclaration): string {
         }
     }
     return `
-function ${functionName}(obj: any): obj is ${interfaceName} {
+export function ${functionName}(obj: any): obj is ${interfaceName} {
     ${statements.join("\n")}
     return true;
 }
@@ -187,25 +180,58 @@ if (paths.length === 0) {
 const project = new Project()
 project.addExistingSourceFiles(paths)
 
-const sourceFiles = project.getSourceFiles()
+// project.getSourceFiles().forEach(sourceFile => {
+//     if (endsWith(sourceFile.getFilePath(), ".guard.ts")) {
+//         if (!project.removeSourceFile(sourceFile)) {
+//             throw new TypeError(`Failed to remove '${sourceFile.getFilePath()}' from project`)
+//         }
+//     }
+// })
 
-console.log(`${sourceFiles.length} source files found`);
-
-for (const sourceFile of sourceFiles) {
+const outFiles = project.getSourceFiles().reduce((acc, sourceFile) => {
     const interfaces = sourceFile.getInterfaces()
+    let defaultImport: InterfaceDeclaration | undefined
+    const imports: InterfaceDeclaration[] = []
     const functions = interfaces.reduce((acc, iface) => {
         if (iface.isExported()) {
+            if (iface.isDefaultExport()) {
+                defaultImport = iface
+            } else {
+                imports.push(iface)
+            }
             acc.push(processInterface(iface))
         }
         return acc
     }, [] as string[])
 
     if (functions.length > 0) {
-        project.createSourceFile(
-            outFilePath(sourceFile.getFilePath()),
-            functions.join('\n')
-        );
-    }
-}
+        const outPath = outFilePath(sourceFile.getFilePath())
+        let outFile = project.getSourceFile(outPath)
+        if (outFile) {
+            outFile.removeText()
+        } else {
+            outFile = project.createSourceFile(outPath)
+        }
+        outFile.addStatements(functions.join('\n'))
 
-project.save()
+        outFile.addImportDeclaration({
+            defaultImport: defaultImport && defaultImport.getName(),
+            moduleSpecifier: sourceFile.getRelativePathAsModuleSpecifierTo(sourceFile),
+            namedImports: imports.map(i => i.getName())
+        })
+
+        acc.push(outFile)
+    }
+    return acc
+}, [] as SourceFile[])
+
+// console.log("about to output ", outFiles.map(f => f.getFilePath()))
+// Promise.all(outFiles.map(outFile => {
+//     console.log("Unlinking " + outFile.getFilePath())
+//     fs.promises.unlink(outFile.getFilePath())
+// })).then(() =>
+project.save().then(() => {
+    console.log("Done!")
+}).catch(error => {
+    console.error(error)
+})
