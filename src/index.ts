@@ -1,8 +1,6 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type, SourceFile } from 'ts-simple-ast'
-import { camelCase, upperFirst, flatMap, endsWith } from "lodash"
-import Path from "path"
+import Project, { InterfaceDeclaration, PropertySignature, Type } from 'ts-simple-ast'
+import { flatMap } from "lodash"
 import { BaseError } from "make-error"
-import fs from "fs"
 
 // -- Error types --
 
@@ -16,14 +14,6 @@ class UnsupportedPropertyError extends BaseError {
 }
 
 // -- Helpers --
-
-function trimExtension(path: string): string {
-    const match = path.match(/^[^\.]+/)
-    if (match === null) {
-        throw new TypeError(`Could not trim extenstion from path "${path}"`)
-    }
-    return match[0]
-}
 
 function outFilePath(sourcePath: string) {
     return sourcePath.replace(/\.(ts|tsx|d\.ts)$/, "\.guard.ts")
@@ -49,10 +39,6 @@ function indent(code: string, tabCount: number) {
             : `${indentPrefix[tabCount]}${line}`
     ).join('\n')
     return result
-}
-
-function ors(...statements: string[]): string {
-    return statements.join(" || \n")
 }
 
 function ands(...statements: string[]): string {
@@ -163,15 +149,7 @@ if (paths.length === 0) {
 const project = new Project()
 project.addExistingSourceFiles(paths)
 
-// project.getSourceFiles().forEach(sourceFile => {
-//     if (endsWith(sourceFile.getFilePath(), ".guard.ts")) {
-//         if (!project.removeSourceFile(sourceFile)) {
-//             throw new TypeError(`Failed to remove '${sourceFile.getFilePath()}' from project`)
-//         }
-//     }
-// })
-
-const outFiles = project.getSourceFiles().reduce((acc, sourceFile) => {
+project.getSourceFiles().forEach(sourceFile => {
     const interfaces = sourceFile.getInterfaces()
     let defaultImport: InterfaceDeclaration | undefined
     const imports: InterfaceDeclaration[] = []
@@ -202,17 +180,9 @@ const outFiles = project.getSourceFiles().reduce((acc, sourceFile) => {
             moduleSpecifier: sourceFile.getRelativePathAsModuleSpecifierTo(sourceFile),
             namedImports: imports.map(i => i.getName())
         })
-
-        acc.push(outFile)
     }
-    return acc
-}, [] as SourceFile[])
+})
 
-// console.log("about to output ", outFiles.map(f => f.getFilePath()))
-// Promise.all(outFiles.map(outFile => {
-//     console.log("Unlinking " + outFile.getFilePath())
-//     fs.promises.unlink(outFile.getFilePath())
-// })).then(() =>
 project.save().then(() => {
     console.log("Done!")
 }).catch(error => {
