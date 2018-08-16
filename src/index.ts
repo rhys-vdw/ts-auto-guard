@@ -1,5 +1,5 @@
 import Project, { InterfaceDeclaration, PropertySignature, Type } from 'ts-simple-ast'
-import { camelCase, upperFirst, flatMap } from "lodash"
+import { camelCase, upperFirst, flatMap, endsWith } from "lodash"
 import Path from "path"
 import { BaseError } from "make-error"
 
@@ -14,7 +14,7 @@ class UnsupportedPropertyError extends BaseError {
     }
 }
 
-// -- Main program --
+// -- Helpers --
 
 function trimExtension(path: string): string {
     const match = path.match(/^[^\.]+/)
@@ -31,6 +31,12 @@ function interfaceToName(iface: InterfaceDeclaration): string {
     }
     return iface.getName()
 }
+
+function outFilePath(sourcePath: string) {
+    return sourcePath.replace(/\.(ts|tsx|d\.ts)$/, "\.guard.ts")
+}
+
+// -- Main program --
 
 const tab = `    `;
 const indentPrefix = [
@@ -115,8 +121,7 @@ function isNotTypeConditions(varName: string, type: Type): string[] {
         ]
     }
     if (type.isInterface()) {
-        return []
-        // return ["INTERFACE"]
+        return [`!${isInterfaceFunctionNames.get(type)}(${varName})`]
     }
     return isNotValueTypeConditions(varName, type)
 }
@@ -144,9 +149,13 @@ ${indent(ands(...conditions), 2)}
 `;
 }
 
+const isInterfaceFunctionNames = new WeakMap<Type, string>()
+
 function processInterface(iface: InterfaceDeclaration): string {
     const statements: string[] = []
     const interfaceName = interfaceToName(iface);
+    const functionName = `is${interfaceName}`;
+    isInterfaceFunctionNames.set(iface.getType(), functionName);
     for (const property of iface.getProperties()) {
         try {
             statements.push(isPropertyIfStatement(property))
@@ -158,13 +167,12 @@ function processInterface(iface: InterfaceDeclaration): string {
             throw error
         }
     }
-    console.log(`
-function is${interfaceName}(obj: any): obj is ${interfaceName} {
+    return `
+function ${functionName}(obj: any): obj is ${interfaceName} {
     ${statements.join("\n")}
     return true;
 }
-`)
-    return ""
+`
 }
 
 // -- Process input --
@@ -186,10 +194,19 @@ console.log(`${sourceFiles.length} source files found`);
 
 for (const sourceFile of sourceFiles) {
     const interfaces = sourceFile.getInterfaces()
-    for (const iface of interfaces) {
+    const functions = interfaces.reduce((acc, iface) => {
         if (iface.isExported()) {
-            processInterface(iface)
+            acc.push(processInterface(iface))
         }
+        return acc
+    }, [] as string[])
+
+    if (functions.length > 0) {
+        project.createSourceFile(
+            outFilePath(sourceFile.getFilePath()),
+            functions.join('\n')
+        );
     }
 }
 
+project.save()
