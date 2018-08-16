@@ -74,6 +74,9 @@ function isNotTypeConditions(varName: string, type: Type): string[] {
     if (type.isInterface()) {
         return [`!${isInterfaceFunctionNames.get(type)}(${varName})`]
     }
+    if (type.isObject()) {
+        return [notTypeOf('obj', "object")]
+    }
     if (type.isLiteral()) {
         return [not(varName, type.getText())]
     }
