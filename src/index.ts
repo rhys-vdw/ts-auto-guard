@@ -1,17 +1,5 @@
 import Project, { InterfaceDeclaration, PropertySignature, Type } from 'ts-simple-ast'
 import { flatMap } from "lodash"
-import { BaseError } from "make-error"
-
-// -- Error types --
-
-class UnsupportedPropertyError extends BaseError {
-    property: PropertySignature
-
-    constructor(property: PropertySignature) {
-        super(`Unsupported property: ${property.getName()}`)
-        this.property = property;
-    }
-}
 
 // -- Helpers --
 
@@ -41,6 +29,10 @@ function indent(code: string, tabCount: number) {
     return result
 }
 
+function ors(...statements: string[]): string {
+    return statements.join(" || \n")
+}
+
 function ands(...statements: string[]): string {
     return statements.join(" && \n")
 }
@@ -57,12 +49,16 @@ function isNotTypesConditions(varName: string, types: ReadonlyArray<Type>): stri
     return flatMap(types, type => isNotTypeConditions(varName, type))
 }
 
+function parens(code: string) {
+    return `(\n${indent(code, 1)}\n)`
+}
+
 function isNotTypeConditions(varName: string, type: Type): string[] {
     if (type.isUnion()) {
-        return isNotTypesConditions(varName, type.getUnionTypes())
+        return [parens(ands(...isNotTypesConditions(varName, type.getUnionTypes())))]
     }
     if (type.isIntersection()) {
-        return isNotTypesConditions(varName, type.getIntersectionTypes())
+        return [parens(ands(...isNotTypesConditions(varName, type.getIntersectionTypes())))]
     }
     if (type.isArray()) {
         return [
@@ -83,7 +79,7 @@ function isNotTypeConditions(varName: string, type: Type): string[] {
     return [notTypeOf(varName, type.getText())]
 }
 
-function isPropertyIfStatement(property: PropertySignature): string {
+function propertyConditions(property: PropertySignature): string[] {
     const conditions: string[] = [];
     const varName = `obj.${property.getName()}`;
     if (property.hasQuestionToken()) {
@@ -93,15 +89,14 @@ function isPropertyIfStatement(property: PropertySignature): string {
     conditions.push(...isNotTypeConditions(varName, property.getType()))
 
     if (conditions.length === 0) {
-        throw new UnsupportedPropertyError(property);
+        console.error(`WARNING: ${property.getName()} unsupported`)
     }
-    return `
-    if (
-${indent(ands(...conditions), 2)}
-    ) {
-        return false;
-    }
-`;
+
+    return conditions
+}
+
+function propertiesConditions(properties: ReadonlyArray<PropertySignature>): string[] {
+    return flatMap(properties, propertyConditions)
 }
 
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
@@ -109,31 +104,24 @@ const isInterfaceFunctionNames = new WeakMap<Type, string>()
 function processInterface(iface: InterfaceDeclaration): string {
     const interfaceName = iface.getName();
     const functionName = `is${interfaceName}`;
+
     const type = iface.getType();
     isInterfaceFunctionNames.set(type, functionName);
 
     // TODO: Assert object interface
 
-    const statements: string[] = [`
-    if (${notTypeOf('obj', "object")}) {
-        return false;
-    }
-`]
+    const conditions: string[] = [
+        notTypeOf('obj', "object"),
+        ...propertiesConditions(iface.getProperties())
+    ]
 
-    for (const property of iface.getProperties()) {
-        try {
-            statements.push(isPropertyIfStatement(property))
-        } catch (error) {
-            if (error instanceof UnsupportedPropertyError) {
-                console.error(`WARNING: ${interfaceName}.${property.getName()} unsupported`)
-                continue;
-            }
-            throw error
-        }
-    }
     return `
 export function ${functionName}(obj: any): obj is ${interfaceName} {
-    ${statements.join("\n")}
+    if (
+${indent(ors(...conditions), 2)}
+    ) {
+        return false;
+    }
     return true;
 }
 `
