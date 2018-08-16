@@ -67,30 +67,12 @@ function notTypeOf(varName: string, type: string): string {
     return not(`typeof ${varName}`, `"${type}"`)
 }
 
-function isNotValueTypeConditions(varName: string, type: Type): string[] {
-    const conditions: string[] = [];
-    if (type.isBoolean()) {
-        conditions.push(notTypeOf(varName, "boolean"))
-    }
-    if (type.isNumber()) {
-        conditions.push(notTypeOf(varName, "number"))
-    }
-    if (type.isString()) {
-        conditions.push(notTypeOf(varName, "string"))
-    }
-    if (type.isLiteral()) {
-        conditions.push(not(varName, type.getText()))
-    }
-    return conditions
-}
-
 function isNotTypesConditions(varName: string, types: ReadonlyArray<Type>): string[] {
     return flatMap(types, type => isNotTypeConditions(varName, type))
 }
 
 function isNotTypeConditions(varName: string, type: Type): string[] {
     if (type.isUnion()) {
-        type.getUnionTypes()
         return isNotTypesConditions(varName, type.getUnionTypes())
     }
     if (type.isIntersection()) {
@@ -106,14 +88,15 @@ function isNotTypeConditions(varName: string, type: Type): string[] {
     if (type.isInterface()) {
         return [`!${isInterfaceFunctionNames.get(type)}(${varName})`]
     }
-    return isNotValueTypeConditions(varName, type)
+    if (type.isLiteral()) {
+        return [not(varName, type.getText())]
+    }
+    return [notTypeOf(varName, type.getText())]
 }
 
 function isPropertyIfStatement(property: PropertySignature): string {
     const conditions: string[] = [];
-    const type = property.getType();
-    const name = property.getName();
-    const varName = `obj.${name}`;
+    const varName = `obj.${property.getName()}`;
     if (property.hasQuestionToken()) {
         conditions.push(notTypeOf(varName, "undefined"))
     }
