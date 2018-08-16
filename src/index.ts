@@ -66,16 +66,6 @@ function ands(...statements: string[]): string {
     return statements.join(" && \n")
 }
 
-function getTypeOfResult(type: Type): string {
-    if (type.isBoolean()) return "boolean"
-    if (type.isNumber()) return "number"
-    if (type.isString()) return "string"
-    if (type.isNull()) return "null"
-    if (type.isUndefined()) return "null"
-    if (type.isObject()) return "object"
-    throw new TypeError("Unexpected Type")
-}
-
 function not(a: string, b: string): string {
     return `${a} !== ${b}`
 }
@@ -152,10 +142,19 @@ ${indent(ands(...conditions), 2)}
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
 
 function processInterface(iface: InterfaceDeclaration): string {
-    const statements: string[] = []
     const interfaceName = interfaceToName(iface);
     const functionName = `is${interfaceName}`;
-    isInterfaceFunctionNames.set(iface.getType(), functionName);
+    const type = iface.getType();
+    isInterfaceFunctionNames.set(type, functionName);
+
+    // TODO: Assert object interface
+
+    const statements: string[] = [`
+    if (${notTypeOf('obj', "object")}) {
+        return false;
+    }
+`]
+
     for (const property of iface.getProperties()) {
         try {
             statements.push(isPropertyIfStatement(property))
