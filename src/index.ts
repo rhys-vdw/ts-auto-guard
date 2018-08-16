@@ -78,7 +78,7 @@ function isNotValueTypeConditions(varName: string, type: Type): string[] {
     if (type.isString()) {
         conditions.push(notTypeOf(varName, "string"))
     }
-    if (type.isStringLiteral()) {
+    if (type.isLiteral()) {
         conditions.push(not(varName, type.getText()))
     }
     return conditions
