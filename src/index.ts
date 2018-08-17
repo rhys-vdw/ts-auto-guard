@@ -94,10 +94,7 @@ function arrayCondition(varName: string, arrayType: Type): string {
     )
     return ands (
         `Array.isArray(${varName})`,
-        ors(
-            eq(`${varName}.length`, '0'),
-            typeConditions(`${varName}[0]`, arrayType)!
-        )
+        `${varName}.every(e => ${typeConditions("e", arrayType)})`
     )
 }
 
