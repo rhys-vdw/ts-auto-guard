@@ -1,4 +1,4 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards } from 'ts-simple-ast'
+import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards, JSDoc } from 'ts-simple-ast'
 
 // -- Helpers --
 
@@ -150,10 +150,7 @@ function propertiesConditions(properties: ReadonlyArray<PropertySignature>): str
 
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
 
-function processInterface(iface: InterfaceDeclaration): string {
-    const interfaceName = iface.getName();
-    const functionName = `is${interfaceName}`;
-
+function generateTypeGuard(functionName: string, iface: InterfaceDeclaration): string {
     const type = iface.getType();
     isInterfaceFunctionNames.set(type, functionName);
 
@@ -165,7 +162,7 @@ function processInterface(iface: InterfaceDeclaration): string {
     ]
 
     return `
-export function ${functionName}(obj: any): obj is ${interfaceName} {
+export function ${functionName}(obj: any): obj is ${iface.getName()} {
     return (
 ${indent(ands(...conditions), 2)}
     );
@@ -186,18 +183,44 @@ if (paths.length === 0) {
 const project = new Project()
 project.addExistingSourceFiles(paths)
 
+function getTypeGuardName(jsDocs: JSDoc[]): string | null {
+    for (const doc of jsDocs) {
+        for (const line of doc.getInnerText().split("\n")) {
+            const match = line.trim().match(/@see\s+{([a-zA-Z]+)}\s+ts-auto-guard:([a-z-]+)/)
+            if (match !== null) {
+                const [, typeGuardName, command] = match
+                if (command !== "type-guard") {
+                    console.error(`ERROR: command ${command} is not supported!`)
+                    return null
+                }
+                return typeGuardName;
+            }
+        }
+    }
+    return null
+}
+
+
 project.getSourceFiles().forEach(sourceFile => {
     const interfaces = sourceFile.getInterfaces()
     let defaultImport: InterfaceDeclaration | undefined
     const imports: InterfaceDeclaration[] = []
     const functions = interfaces.reduce((acc, iface) => {
-        if (iface.isExported()) {
-            if (iface.isDefaultExport()) {
-                defaultImport = iface
+        const typeGuardName = getTypeGuardName(iface.getJsDocs());
+        if (typeGuardName !== null) {
+            if (iface.isExported()) {
+                if (iface.isDefaultExport()) {
+                    defaultImport = iface
+                } else {
+                    imports.push(iface)
+                }
+                acc.push(generateTypeGuard(typeGuardName, iface))
             } else {
-                imports.push(iface)
+                console.error(
+                    `ERROR: interface ${iface.getName()} is not exported, ` +
+                    `generating ${typeGuardName} skipped`
+                )
             }
-            acc.push(processInterface(iface))
         }
         return acc
     }, [] as string[])
