@@ -1,10 +1,29 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type } from 'ts-simple-ast'
+import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards } from 'ts-simple-ast'
 import { flatMap } from "lodash"
 
 // -- Helpers --
 
 function outFilePath(sourcePath: string) {
     return sourcePath.replace(/\.(ts|tsx|d\.ts)$/, "\.guard.ts")
+}
+
+// https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
+function isClassType(type: Type): boolean {
+    if (type.getConstructSignatures().length > 0)
+        return true;
+
+    const symbol = type.getSymbol();
+    if (symbol == null)
+        return false;
+
+    for (const declaration of symbol.getDeclarations()) {
+        if (TypeGuards.isClassDeclaration(declaration))
+            return true;
+        if (TypeGuards.isVariableDeclaration(declaration) && declaration.getType().getConstructSignatures().length > 0)
+            return true;
+    }
+
+    return false;
 }
 
 // -- Main program --
@@ -37,56 +56,63 @@ function ands(...statements: string[]): string {
     return statements.join(" && \n")
 }
 
-function not(a: string, b: string): string {
-    return `${a} !== ${b}`
+function eq(a: string, b: string): string {
+    return `${a} === ${b}`
 }
 
-function notTypeOf(varName: string, type: string): string {
-    return not(`typeof ${varName}`, `"${type}"`)
+function typeOf(varName: string, type: string): string {
+    return eq(`typeof ${varName}`, `"${type}"`)
 }
 
-function isNotTypesConditions(varName: string, types: ReadonlyArray<Type>): string[] {
-    return flatMap(types, type => isNotTypeConditions(varName, type))
+function typeUnionConditions(varName: string, types: Type[], isOptional: boolean): string {
+    const conditions: string[] = []
+    if (isOptional && types.findIndex(type => type.isUndefined()) === -1) {
+        conditions.push(typeOf(varName, "undefined"))
+    }
+    conditions.push(...flatMap(types, type => typeConditions(varName, type)))
+    return parens(ors(...conditions))
 }
 
 function parens(code: string) {
     return `(\n${indent(code, 1)}\n)`
 }
 
-function isNotTypeConditions(varName: string, type: Type): string[] {
+function typeConditions(varName: string, type: Type, isOptional: boolean = false): string {
     if (type.isUnion()) {
-        return [parens(ands(...isNotTypesConditions(varName, type.getUnionTypes())))]
+        return typeUnionConditions(varName, type.getUnionTypes(), isOptional)
     }
     if (type.isIntersection()) {
-        return [parens(ands(...isNotTypesConditions(varName, type.getIntersectionTypes())))]
+        return typeUnionConditions(varName, type.getIntersectionTypes(), isOptional)
+    }
+    if (isOptional) {
+        return typeUnionConditions(varName, [type], isOptional)
     }
     if (type.isArray()) {
-        return [
-            `!Array.isArray(${varName})`,
-            `${varName}.length > 0`,
-            ...isNotTypeConditions(`${varName}[0]`, type.getArrayType()!),
-        ]
+        return ands(
+            `Array.isArray(${varName})`,
+            ors(eq(`${varName}.length`, '0'), typeConditions(`${varName}[0]`, type.getArrayType()!)),
+        )
+    }
+    if (isClassType(type)) {
+        return `${varName} instanceof ${type.getText()}`
     }
     if (type.isInterface()) {
-        return [`!${isInterfaceFunctionNames.get(type)}(${varName})`]
+        return `${isInterfaceFunctionNames.get(type)}(${varName})`
     }
     if (type.isObject()) {
-        return [notTypeOf('obj', "object")]
+        return typeOf(varName, "object")
     }
     if (type.isLiteral()) {
-        return [not(varName, type.getText())]
+        return eq(varName, type.getText())
     }
-    return [notTypeOf(varName, type.getText())]
+    return typeOf(varName, type.getText())
 }
 
 function propertyConditions(property: PropertySignature): string[] {
     const conditions: string[] = [];
     const varName = `obj.${property.getName()}`;
-    if (property.hasQuestionToken()) {
-        conditions.push(notTypeOf(varName, "undefined"))
-    }
 
-    conditions.push(...isNotTypeConditions(varName, property.getType()))
+    conditions.push(typeConditions(varName, property.getType(), property.hasQuestionToken()))
 
     if (conditions.length === 0) {
         console.error(`WARNING: ${property.getName()} unsupported`)
@@ -111,18 +137,15 @@ function processInterface(iface: InterfaceDeclaration): string {
     // TODO: Assert object interface
 
     const conditions: string[] = [
-        notTypeOf('obj', "object"),
+        typeOf('obj', "object"),
         ...propertiesConditions(iface.getProperties())
     ]
 
     return `
 export function ${functionName}(obj: any): obj is ${interfaceName} {
-    if (
-${indent(ors(...conditions), 2)}
-    ) {
-        return false;
-    }
-    return true;
+    return (
+${indent(ands(...conditions), 2)}
+    );
 }
 `
 }
