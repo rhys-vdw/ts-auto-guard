@@ -78,6 +78,9 @@ function parens(code: string) {
 }
 
 function typeConditions(varName: string, type: Type, isOptional: boolean = false): string {
+    if (type.getText() === "never") {
+        return typeOf(varName, "undefined")
+    }
     if (type.isUnion()) {
         return typeUnionConditions(varName, type.getUnionTypes(), isOptional)
     }
