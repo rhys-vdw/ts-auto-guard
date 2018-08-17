@@ -5,7 +5,10 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc && chmod 775 lib/cli.js"
+  },
+  "bin": {
+    "ts-auto-guard": "./lib/cli.js"
   },
   "author": "Rhys van der Waerden",
   "license": "MIT",
