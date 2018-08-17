@@ -26,7 +26,11 @@ function isClassType(type: Type): boolean {
 }
 
 function isReadonlyArrayType(type: Type): boolean {
-    return type.getText().startsWith("ReadonlyArray<")
+    const symbol = type.getSymbol()
+    if (symbol === undefined) {
+        return false
+    }
+    return symbol.getName() === "ReadonlyArray" && type.getTypeArguments().length === 1
 }
 
 function getReadonlyArrayType(type: Type): Type | undefined {
