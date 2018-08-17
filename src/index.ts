@@ -1,5 +1,4 @@
 import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards } from 'ts-simple-ast'
-import { flatMap } from "lodash"
 
 // -- Helpers --
 
@@ -24,6 +23,14 @@ function isClassType(type: Type): boolean {
     }
 
     return false;
+}
+
+function isReadonlyArrayType(type: Type): boolean {
+    return type.getText().startsWith("ReadonlyArray<")
+}
+
+function getReadonlyArrayType(type: Type): Type | undefined {
+    return type.getTypeArguments()[0]
 }
 
 // -- Main program --
@@ -69,7 +76,10 @@ function typeUnionConditions(varName: string, types: Type[], isOptional: boolean
     if (isOptional && types.findIndex(type => type.isUndefined()) === -1) {
         conditions.push(typeOf(varName, "undefined"))
     }
-    conditions.push(...flatMap(types, type => typeConditions(varName, type)))
+    conditions.push(...types
+        .map(type => typeConditions(varName, type))
+        .filter((v) => v !== null) as string[]
+    )
     return parens(ors(...conditions))
 }
 
@@ -77,7 +87,24 @@ function parens(code: string) {
     return `(\n${indent(code, 1)}\n)`
 }
 
-function typeConditions(varName: string, type: Type, isOptional: boolean = false): string {
+function arrayCondition(varName: string, arrayType: Type): string {
+    if (arrayType.getText() === "never") return ands(
+            `Array.isArray(${varName})`,
+            eq(`${varName}.length`, '0'),
+    )
+    return ands (
+        `Array.isArray(${varName})`,
+        ors(
+            eq(`${varName}.length`, '0'),
+            typeConditions(`${varName}[0]`, arrayType)!
+        )
+    )
+}
+
+function typeConditions(varName: string, type: Type, isOptional: boolean = false): string | null {
+    if (type.getText() === "any") {
+        return null
+    }
     if (type.getText() === "never") {
         return typeOf(varName, "undefined")
     }
@@ -91,10 +118,10 @@ function typeConditions(varName: string, type: Type, isOptional: boolean = false
         return typeUnionConditions(varName, [type], isOptional)
     }
     if (type.isArray()) {
-        return ands(
-            `Array.isArray(${varName})`,
-            ors(eq(`${varName}.length`, '0'), typeConditions(`${varName}[0]`, type.getArrayType()!)),
-        )
+        return arrayCondition(varName, type.getArrayType()!)
+    }
+    if (isReadonlyArrayType(type)) {
+        return arrayCondition(varName, getReadonlyArrayType(type)!)
     }
     if (isClassType(type)) {
         return `${varName} instanceof ${type.getText()}`
@@ -111,21 +138,13 @@ function typeConditions(varName: string, type: Type, isOptional: boolean = false
     return typeOf(varName, type.getText())
 }
 
-function propertyConditions(property: PropertySignature): string[] {
-    const conditions: string[] = [];
+function propertyConditions(property: PropertySignature): string | null {
     const varName = `obj.${property.getName()}`;
-
-    conditions.push(typeConditions(varName, property.getType(), property.hasQuestionToken()))
-
-    if (conditions.length === 0) {
-        console.error(`WARNING: ${property.getName()} unsupported`)
-    }
-
-    return conditions
+    return typeConditions(varName, property.getType(), property.hasQuestionToken())
 }
 
 function propertiesConditions(properties: ReadonlyArray<PropertySignature>): string[] {
-    return flatMap(properties, propertyConditions)
+    return properties.map(propertyConditions).filter(v => v !== null) as string[]
 }
 
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
