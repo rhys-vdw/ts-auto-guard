@@ -96,26 +96,6 @@ function getTypeGuardName(typeName: string, jsDocs: JSDoc[]): string | null {
 
 // -- Main program --
 
-const tab = `    `;
-const indentPrefix = [
-    ``,
-    `${tab}`,
-    `${tab}${tab}`,
-    `${tab}${tab}${tab}`,
-]
-
-function indent(code: string, tabCount: number) {
-    if (tabCount >= indentPrefix.length) {
-        throw new TypeError(`tabCount >= ${indentPrefix.length}`)
-    }
-    const result = code.split("\n").map(line =>
-        line.trim().length === 0
-            ? ""
-            : `${indentPrefix[tabCount]}${line}`
-    ).join('\n')
-    return result
-}
-
 function ors(...statements: string[]): string {
     return statements.join(" || \n")
 }
@@ -145,7 +125,7 @@ function typeUnionConditions(varName: string, types: Type[], isOptional: boolean
 }
 
 function parens(code: string) {
-    return `(\n${indent(code, 1)}\n)`
+    return `(\n${code}\n)`
 }
 
 function arrayCondition(varName: string, arrayType: Type, dependencies: Dependency[], project: Project): string {
@@ -153,9 +133,13 @@ function arrayCondition(varName: string, arrayType: Type, dependencies: Dependen
             `Array.isArray(${varName})`,
             eq(`${varName}.length`, '0'),
     )
-    return ands (
+    const conditions = typeConditions("e", arrayType, false, dependencies, project)
+    if (conditions === null) {
+        console.error(`ERROR: No conditions for ${varName}, with array type ${arrayType.getText()}`)
+    }
+    return ands(
         `Array.isArray(${varName})`,
-        `${varName}.every(e =>\n${indent(typeConditions("e", arrayType, false, dependencies, project)!, 1)}\n)`
+        `${varName}.every(e =>\n${conditions}\n)`
     )
 }
 
@@ -252,13 +236,13 @@ function objectConditions(varName: string, properties: ReadonlyArray<PropertySig
 function generateTypeGuard(functionName: string, iface: InterfaceDeclaration, dependencies: Dependency[], project: Project): string {
     const conditions = objectConditions('obj', iface.getProperties(), dependencies, project)
 
-return `
-export function ${functionName}(obj: any): obj is ${iface.getName()} {
-    return (
-${indent(conditions, 2)}
-    )
-}
-`
+    return `
+        export function ${functionName}(obj: any): obj is ${iface.getName()} {
+            return (
+                ${conditions}
+            )
+        }
+    `
 }
 
 // -- Process project --
@@ -335,6 +319,8 @@ export function generate(paths: string[]) {
                     })
                 }
             }
+
+            outFile.formatText()
         }
     })
 
