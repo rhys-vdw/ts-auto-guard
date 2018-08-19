@@ -224,8 +224,8 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
         return `${typeGuardName}(${varName})`
     }
     if (type.isObject()) {
-        // TODO: Assert object interface
-        return typeOf(varName, "object")
+        const properties = type.getProperties().map(p => p.getDeclarations()[0] as PropertySignature)
+        return objectConditions(varName, properties, dependencies, project)
     }
     if (type.isLiteral()) {
         return eq(varName, type.getText())
