@@ -143,7 +143,7 @@ function arrayCondition(varName: string, arrayType: Type, dependencies: Dependen
     )
 }
 
-function typeConditions(varName: string, type: Type, isOptional: boolean, dependencies: Dependency[], project: Project): string | null {
+function typeConditions(varName: string, type: Type, isOptional: boolean, dependencies: Dependency[], project: Project, useGuard: boolean = true): string | null {
     function addDependency(type: Type) {
         const dependency = typeToDependency(type)
         if (dependency !== null) {
@@ -191,8 +191,20 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
             return null
         }
         const typeGuardName = getTypeGuardName(declaration.getName(), docs)
-        if (typeGuardName === null) {
-            return objectConditions(varName, declaration.getProperties(), dependencies, project)
+
+        if (!useGuard || typeGuardName === null) {
+            const extendConditions = declaration.getBaseTypes().reduce((acc, type) => {
+                const condition = typeConditions(varName, type, false, dependencies, project)
+                if (condition !== null) {
+                    acc.push(condition)
+                }
+                return acc
+            }, [] as string[])
+            return ands(
+                typeOf(varName, "object"),
+                ...extendConditions,
+                ...propertiesConditions(varName, declaration.getProperties(), dependencies, project)
+            )
         }
 
         // TODO: This line returns the path lower cased.
@@ -205,7 +217,9 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
             isDefault: false
         })
 
-        return `${typeGuardName}(${varName})`
+        // NOTE: Cast to boolean to stop type guard property and prevent compile
+        //       errors.
+        return `${typeGuardName}(${varName}) as boolean`
     }
     if (type.isTuple()) {
         const types = type.getTupleElements()
@@ -243,7 +257,7 @@ function objectConditions(varName: string, properties: ReadonlyArray<PropertySig
 }
 
 function generateTypeGuard(functionName: string, iface: InterfaceDeclaration, dependencies: Dependency[], project: Project): string {
-    const conditions = objectConditions('obj', iface.getProperties(), dependencies, project)
+    const conditions = typeConditions('obj', iface.getType(), false, dependencies, project, false)
 
     return `
         export function ${functionName}(obj: any): obj is ${iface.getName()} {
