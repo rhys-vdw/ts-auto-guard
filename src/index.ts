@@ -1,6 +1,53 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards, JSDoc } from 'ts-simple-ast'
+import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards, SymbolFlags, JSDoc, ExportableNode, Node, SourceFile } from 'ts-simple-ast'
+import { flatMap } from "lodash"
+
+// -- Types --
+
+interface Dependency {
+    sourceFile: SourceFile,
+    name: string,
+    isDefault: boolean,
+}
 
 // -- Helpers --
+
+function findExportableNode(type: Type): ExportableNode & Node | null {
+    const symbol = type.getSymbol()
+    if (symbol === undefined) {
+        return null
+    }
+
+    return flatMap(
+        symbol.getDeclarations(),
+        d => [d, ...d.getAncestors()]
+    ).find(TypeGuards.isExportableNode) || null
+}
+
+function typeToDependency(type: Type): Dependency | null {
+    const exportable = findExportableNode(type)
+    if (exportable === null) {
+        return exportable
+    }
+
+    const sourceFile = exportable.getAncestors().find(node => {
+        const symbol = node.getSymbol()
+        return symbol !== undefined && (symbol.getFlags() & SymbolFlags.Module) !== 0
+    }) as SourceFile
+
+    if (sourceFile === undefined) {
+        // This is a global (I think).
+        return null
+    }
+
+    const name = exportable.getSymbol()!.getName()
+    const isDefault = exportable.isDefaultExport()
+
+    if (!exportable.isExported()) {
+        console.error(`ERROR: ${name} is not exported from ${sourceFile.getFilePath()}`)
+    }
+
+    return { sourceFile, name, isDefault }
+}
 
 function outFilePath(sourcePath: string) {
     return sourcePath.replace(/\.(ts|tsx|d\.ts)$/, "\.guard.ts")
@@ -94,13 +141,13 @@ function typeOf(varName: string, type: string): string {
     return eq(`typeof ${varName}`, `"${type}"`)
 }
 
-function typeUnionConditions(varName: string, types: Type[], isOptional: boolean): string {
+function typeUnionConditions(varName: string, types: Type[], isOptional: boolean, dependencies: Dependency[]): string {
     const conditions: string[] = []
     if (isOptional && types.findIndex(type => type.isUndefined()) === -1) {
         conditions.push(typeOf(varName, "undefined"))
     }
     conditions.push(...types
-        .map(type => typeConditions(varName, type))
+        .map(type => typeConditions(varName, type, false, dependencies))
         .filter((v) => v !== null) as string[]
     )
     return parens(ors(...conditions))
@@ -110,18 +157,22 @@ function parens(code: string) {
     return `(\n${indent(code, 1)}\n)`
 }
 
-function arrayCondition(varName: string, arrayType: Type): string {
+function arrayCondition(varName: string, arrayType: Type, dependencies: Dependency[]): string {
     if (arrayType.getText() === "never") return ands(
             `Array.isArray(${varName})`,
             eq(`${varName}.length`, '0'),
     )
     return ands (
         `Array.isArray(${varName})`,
-        `${varName}.every(e => ${typeConditions("e", arrayType)})`
+        `${varName}.every(e => ${typeConditions("e", arrayType, false, dependencies)})`
     )
 }
 
-function typeConditions(varName: string, type: Type, isOptional: boolean = false): string | null {
+function typeConditions(varName: string, type: Type, isOptional: boolean = false, dependencies: Dependency[]): string | null {
+    const dependency = typeToDependency(type)
+    if (dependency !== null) {
+        dependencies.push(dependency)
+    }
     if (type.getText() === "any") {
         return null
     }
@@ -129,22 +180,22 @@ function typeConditions(varName: string, type: Type, isOptional: boolean = false
         return typeOf(varName, "undefined")
     }
     if (type.isUnion()) {
-        return typeUnionConditions(varName, type.getUnionTypes(), isOptional)
+        return typeUnionConditions(varName, type.getUnionTypes(), isOptional, dependencies)
     }
     if (type.isIntersection()) {
-        return typeUnionConditions(varName, type.getIntersectionTypes(), isOptional)
+        return typeUnionConditions(varName, type.getIntersectionTypes(), isOptional, dependencies)
     }
     if (isOptional) {
-        return typeUnionConditions(varName, [type], isOptional)
+        return typeUnionConditions(varName, [type], isOptional, dependencies)
     }
     if (type.isArray()) {
-        return arrayCondition(varName, type.getArrayType()!)
+        return arrayCondition(varName, type.getArrayType()!, dependencies)
     }
     if (isReadonlyArrayType(type)) {
-        return arrayCondition(varName, getReadonlyArrayType(type)!)
+        return arrayCondition(varName, getReadonlyArrayType(type)!, dependencies)
     }
     if (isClassType(type)) {
-        return `${varName} instanceof ${type.getText()}`
+        return `${varName} instanceof ${type.getSymbol()!.getName()}`
     }
     if (type.isInterface()) {
         return `${isInterfaceFunctionNames.get(type)}(${varName})`
@@ -158,18 +209,18 @@ function typeConditions(varName: string, type: Type, isOptional: boolean = false
     return typeOf(varName, type.getText())
 }
 
-function propertyConditions(property: PropertySignature): string | null {
+function propertyConditions(property: PropertySignature, dependencies: Dependency[]): string | null {
     const varName = `obj.${property.getName()}`;
-    return typeConditions(varName, property.getType(), property.hasQuestionToken())
+    return typeConditions(varName, property.getType(), property.hasQuestionToken(), dependencies)
 }
 
-function propertiesConditions(properties: ReadonlyArray<PropertySignature>): string[] {
-    return properties.map(propertyConditions).filter(v => v !== null) as string[]
+function propertiesConditions(properties: ReadonlyArray<PropertySignature>, dependencies: Dependency[]): string[] {
+    return properties.map(prop => propertyConditions(prop, dependencies)).filter(v => v !== null) as string[]
 }
 
 const isInterfaceFunctionNames = new WeakMap<Type, string>()
 
-function generateTypeGuard(functionName: string, iface: InterfaceDeclaration): string {
+function generateTypeGuard(functionName: string, iface: InterfaceDeclaration, dependencies: Dependency[]): string {
     const type = iface.getType();
     isInterfaceFunctionNames.set(type, functionName);
 
@@ -177,7 +228,7 @@ function generateTypeGuard(functionName: string, iface: InterfaceDeclaration): s
 
     const conditions: string[] = [
         typeOf('obj', "object"),
-        ...propertiesConditions(iface.getProperties())
+        ...propertiesConditions(iface.getProperties(), dependencies)
     ]
 
     return `
@@ -197,18 +248,17 @@ export function generate(paths: string[]) {
 
     project.getSourceFiles().forEach(sourceFile => {
         const interfaces = sourceFile.getInterfaces()
-        let defaultImport: InterfaceDeclaration | undefined
-        const imports: InterfaceDeclaration[] = []
+        const dependencies: Dependency[] = []
         const functions = interfaces.reduce((acc, iface) => {
             const typeGuardName = getTypeGuardName(iface.getName(), iface.getJsDocs());
             if (typeGuardName !== null) {
                 if (iface.isExported()) {
-                    if (iface.isDefaultExport()) {
-                        defaultImport = iface
-                    } else {
-                        imports.push(iface)
-                    }
-                    acc.push(generateTypeGuard(typeGuardName, iface))
+                    dependencies.push({
+                        name: iface.getName(),
+                        isDefault: iface.isDefaultExport(),
+                        sourceFile,
+                    })
+                    acc.push(generateTypeGuard(typeGuardName, iface, dependencies))
                 } else {
                     console.error(
                         `ERROR: interface ${iface.getName()} is not exported, ` +
@@ -229,10 +279,29 @@ export function generate(paths: string[]) {
             }
             outFile.addStatements(functions.join('\n'))
 
-            outFile.addImportDeclaration({
-                defaultImport: defaultImport && defaultImport.getName(),
-                moduleSpecifier: sourceFile.getRelativePathAsModuleSpecifierTo(sourceFile),
-                namedImports: imports.map(i => i.getName())
+            // Dedupe imports
+            const imports = dependencies.reduce((acc, { sourceFile, isDefault, name }) => {
+                if (!acc.has(sourceFile)) {
+                    acc.set(sourceFile, { default: undefined, named: new Set<string>() })
+                }
+                const element = acc.get(sourceFile)!
+                if (isDefault) {
+                    if (element.default !== undefined && element.default !== name) {
+                        console.error(`ERROR: Conflicting default export for "${sourceFile.getFilePath()}": "${name}" vs "${element.default}"`)
+                    }
+                    element.default = name
+                } else {
+                    element.named.add(name)
+                }
+                return acc
+            }, new Map<SourceFile, { default: string | undefined, named: Set<string> }>())
+
+            imports.forEach((value, path) => {
+                outFile!.addImportDeclaration({
+                    defaultImport: value.default,
+                    moduleSpecifier: sourceFile.getRelativePathAsModuleSpecifierTo(path),
+                    namedImports: Array.from(value.named),
+                })
             })
         }
     })
