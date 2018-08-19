@@ -299,7 +299,6 @@ export function generate(paths: string[]) {
         if (functions.length > 0) {
             const outPath = outFilePath(sourceFile.getFilePath())
             const outFile = clearOrCreate(project, outPath)
-            outFile.addStatements(functions.join('\n'))
 
             // Dedupe imports
             const imports = dependencies.reduce((acc, { sourceFile, isDefault, name }) => {
@@ -318,16 +317,26 @@ export function generate(paths: string[]) {
                 return acc
             }, new Map<SourceFile, { default: string | undefined, named: Set<string> }>())
 
+            // Add import declarations
             for (const [importFile, { default: defaultImport, named }] of imports.entries()) {
                 // Don't self-import
                 if (importFile !== outFile) {
                     outFile.addImportDeclaration({
                         defaultImport,
-                        moduleSpecifier: sourceFile.getRelativePathAsModuleSpecifierTo(importFile),
+                        moduleSpecifier: outFile.getRelativePathAsModuleSpecifierTo(importFile),
                         namedImports: Array.from(named),
                     })
                 }
             }
+
+            outFile.addStatements(functions.join('\n'))
+
+            outFile.insertStatements(0, [
+                `/*`,
+                `* Generated type guards for "${outFile.getRelativePathTo(sourceFile)}".`,
+                `* WARNING: Do not manually change this file.`,
+                `*/`
+            ].join("\n"))
 
             outFile.formatText()
         }
