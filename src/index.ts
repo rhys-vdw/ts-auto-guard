@@ -207,6 +207,15 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
 
         return `${typeGuardName}(${varName})`
     }
+    if (type.isTuple()) {
+        const types = type.getTupleElements()
+        const conditions = types.reduce((acc, type, i) => {
+            const condition = typeConditions(`${varName}[${i}]`, type, false, dependencies, project)
+            if (condition !== null) acc.push(condition)
+            return acc
+        }, [`Array.isArray(${varName})`])
+        return ands(...conditions)
+    }
     if (type.isObject()) {
         const properties = type.getProperties().map(p => p.getDeclarations()[0] as PropertySignature)
         return objectConditions(varName, properties, dependencies, project)
