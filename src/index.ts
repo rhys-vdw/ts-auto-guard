@@ -235,6 +235,18 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
         return objectConditions(varName, properties, dependencies, project)
     }
     if (type.isLiteral()) {
+        if (type.isEnumLiteral()) {
+            const node = type.getSymbol()!.getDeclarations().find(TypeGuards.isEnumMember)!.getParent()
+            if (node === undefined) {
+                console.error("ERROR: Couldn't find enum literal parent")
+                return null
+            }
+            if (!TypeGuards.isEnumDeclaration(node)) {
+                console.error("ERROR: Enum literal parent was not an enum declaration")
+                return null
+            }
+            addDependency(type)
+        }
         return eq(varName, type.getText())
     }
     return typeOf(varName, type.getText())
