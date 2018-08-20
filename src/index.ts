@@ -1,4 +1,4 @@
-import Project, { InterfaceDeclaration, PropertySignature, Type, TypeGuards, JSDoc, ExportableNode, Node, SourceFile } from 'ts-simple-ast'
+import Project, { PropertySignature, Type, TypeGuards, JSDoc, ExportableNode, Node, SourceFile } from 'ts-simple-ast'
 import { flatMap } from "lodash"
 
 // -- Types --
@@ -75,7 +75,7 @@ function getReadonlyArrayType(type: Type): Type | undefined {
     return type.getTypeArguments()[0]
 }
 
-function getTypeGuardName(typeName: string, jsDocs: JSDoc[]): string | null {
+function getTypeGuardName(jsDocs: JSDoc[]): string | null {
     for (const doc of jsDocs) {
         for (const line of doc.getInnerText().split("\n")) {
             const match = line.trim().match(
@@ -87,7 +87,7 @@ function getTypeGuardName(typeName: string, jsDocs: JSDoc[]): string | null {
                     console.error(`ERROR: command ${command} is not supported!`)
                     return null
                 }
-                return typeGuardName || `is${typeName}`;
+                return typeGuardName
             }
         }
     }
@@ -190,7 +190,7 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
             console.error(`ERROR: Couldn't find declaration for type ${type.getText()}`)
             return null
         }
-        const typeGuardName = getTypeGuardName(declaration.getName(), docs)
+        const typeGuardName = getTypeGuardName(docs)
 
         if (!useGuard || typeGuardName === null) {
             const extendConditions = declaration.getBaseTypes().reduce((acc, type) => {
@@ -268,11 +268,11 @@ function objectConditions(varName: string, properties: ReadonlyArray<PropertySig
     )
 }
 
-function generateTypeGuard(functionName: string, iface: InterfaceDeclaration, dependencies: Dependency[], project: Project): string {
-    const conditions = typeConditions('obj', iface.getType(), false, dependencies, project, false)
+function generateTypeGuard(functionName: string, typeName: string, type: Type, dependencies: Dependency[], project: Project): string {
+    const conditions = typeConditions('obj', type, false, dependencies, project, false)
 
     return `
-        export function ${functionName}(obj: any): obj is ${iface.getName()} {
+        export function ${functionName}(obj: any): obj is ${typeName} {
             return (
                 ${conditions}
             )
@@ -300,24 +300,36 @@ export function generate(paths: string[]) {
     project.addExistingSourceFiles(paths)
 
     project.getSourceFiles().forEach(sourceFile => {
-        const interfaces = sourceFile.getInterfaces()
         const dependencies: Dependency[] = []
-        const functions = interfaces.reduce((acc, iface) => {
-            const typeGuardName = getTypeGuardName(iface.getName(), iface.getJsDocs());
-            if (typeGuardName !== null) {
-                if (iface.isExported()) {
-                    dependencies.push({
-                        name: iface.getName(),
-                        isDefault: iface.isDefaultExport(),
-                        sourceFile,
-                    })
-                    acc.push(generateTypeGuard(typeGuardName, iface, dependencies, project))
-                } else {
-                    console.error(
-                        `ERROR: interface ${iface.getName()} is not exported, ` +
-                        `generating ${typeGuardName} skipped`
-                    )
+        const functions = sourceFile.getChildAtIndex(0).getChildren().reduce((acc, child) => {
+            if (!TypeGuards.isJSDocableNode(child)) {
+                return acc
+            }
+            const typeGuardName = getTypeGuardName(child.getJsDocs());
+            if (typeGuardName === null) {
+                return acc
+            }
+            if (!TypeGuards.isExportableNode(child)) {
+                console.error(`ERROR: Must be exportable:\n\n${child.getText()}\n`)
+                return acc
+            }
+            if (TypeGuards.isEnumDeclaration(child) ||
+                TypeGuards.isInterfaceDeclaration(child) ||
+                TypeGuards.isTypeAliasDeclaration(child)
+            ) {
+                if (!child.isExported()) {
+                    console.error(`ERROR: Node must be exported:\n\n${child.getText()}\n`)
+                    return acc
                 }
+                acc.push(generateTypeGuard(typeGuardName, child.getName(), child.getType(), dependencies, project))
+                dependencies.push({
+                    name: child.getName(),
+                    isDefault: child.isDefaultExport(),
+                    sourceFile,
+                })
+            } else {
+                console.error(`ERROR: Unsupported:\n\n${child.getText()}\n`)
+                return acc
             }
             return acc
         }, [] as string[])
