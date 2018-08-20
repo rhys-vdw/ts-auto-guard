@@ -238,8 +238,16 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
         return typeOf(varName, "function")
     }
     if (type.isObject()) {
-        const properties = type.getProperties().map(p => p.getDeclarations()[0] as PropertySignature)
-        return objectConditions(varName, properties, dependencies, project)
+        try {
+            const properties = type.getProperties()
+            const propertySignatures = properties.map(p => p.getDeclarations()[0] as PropertySignature)
+            return objectConditions(varName, propertySignatures, dependencies, project)
+        } catch (error) {
+            if (error instanceof TypeError) {
+                console.error(`ERROR: Internal ts-simple-ast error for ${type.getText()}`, error)
+            }
+            return null
+        }
     }
     if (type.isLiteral()) {
         if (type.isEnumLiteral()) {
