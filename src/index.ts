@@ -63,6 +63,10 @@ function isClassType(type: Type): boolean {
     return false;
 }
 
+function isFunctionType(type: Type): boolean {
+    return type.getCallSignatures().length > 0
+}
+
 function isReadonlyArrayType(type: Type): boolean {
     const symbol = type.getSymbol()
     if (symbol === undefined) {
@@ -201,7 +205,7 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
                 return acc
             }, [] as string[])
             return ands(
-                typeOf(varName, "object"),
+                typeOf(varName, isFunctionType(type) ? "function" : "object"),
                 ...extendConditions,
                 ...propertiesConditions(varName, declaration.getProperties(), dependencies, project)
             )
@@ -229,6 +233,9 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
             return acc
         }, [`Array.isArray(${varName})`])
         return ands(...conditions)
+    }
+    if (isFunctionType(type)) {
+        return typeOf(varName, "function")
     }
     if (type.isObject()) {
         const properties = type.getProperties().map(p => p.getDeclarations()[0] as PropertySignature)
