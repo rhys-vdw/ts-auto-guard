@@ -184,46 +184,59 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
         addDependency(type)
         return `${varName} instanceof ${type.getSymbol()!.getName()}`
     }
-    if (type.isInterface()) {
-        const declarations = type.getSymbol()!.getDeclarations();
-        const docs = flatMap(declarations, d =>
-            TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : []
-        )
-        const declaration = declarations.find(TypeGuards.isInterfaceDeclaration);
-        if (declaration === undefined) {
-            console.error(`ERROR: Couldn't find declaration for type ${type.getText()}`)
-            return null
-        }
-        const typeGuardName = getTypeGuardName(docs)
+    if (type.isObject()) {
+        const conditions = [typeOf(varName, isFunctionType(type) ? "function" : "object")]
 
-        if (!useGuard || typeGuardName === null) {
-            const extendConditions = declaration.getBaseTypes().reduce((acc, type) => {
-                const condition = typeConditions(varName, type, false, dependencies, project)
-                if (condition !== null) {
-                    acc.push(condition)
-                }
-                return acc
-            }, [] as string[])
-            return ands(
-                typeOf(varName, isFunctionType(type) ? "function" : "object"),
-                ...extendConditions,
-                ...propertiesConditions(varName, declaration.getProperties(), dependencies, project)
+        if (type.isInterface()) {
+            const declarations = type.getSymbol()!.getDeclarations();
+            const docs = flatMap(declarations, d =>
+                TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : []
             )
+            const declaration = declarations.find(TypeGuards.isInterfaceDeclaration);
+            if (declaration === undefined) {
+                console.error(`ERROR: Couldn't find declaration for type ${type.getText()}`)
+                return null
+            }
+
+            const typeGuardName = getTypeGuardName(docs)
+            if (useGuard && typeGuardName !== null) {
+                // TODO: This line returns the path lower cased.
+                // https://github.com/dsherret/ts-simple-ast/issues/394
+                const sourcePath = declaration.getSourceFile()!.getFilePath()
+
+                dependencies.push({
+                    name: typeGuardName,
+                    sourceFile: findOrCreate(project, outFilePath(sourcePath)),
+                    isDefault: false
+                })
+
+                // NOTE: Cast to boolean to stop type guard property and prevent compile
+                //       errors.
+                return `${typeGuardName}(${varName}) as boolean`
+            }
+
+            if (!useGuard || typeGuardName === null) {
+                declaration.getBaseTypes().forEach(type => {
+                    const condition = typeConditions(varName, type, false, dependencies, project)
+                    if (condition !== null) {
+                        conditions.push(condition)
+                    }
+                })
+                conditions.push(...propertiesConditions(varName, declaration.getProperties(), dependencies, project))
+            }
+        } else {
+            // Get object literal properties...
+            try {
+                const properties = type.getProperties()
+                const propertySignatures = properties.map(p => p.getDeclarations()[0] as PropertySignature)
+                conditions.push(...propertiesConditions(varName, propertySignatures, dependencies, project))
+            } catch (error) {
+                if (error instanceof TypeError) {
+                    console.error(`ERROR: Internal ts-simple-ast error for ${type.getText()}`, error)
+                }
+            }
         }
-
-        // TODO: This line returns the path lower cased.
-        // https://github.com/dsherret/ts-simple-ast/issues/394
-        const sourcePath = declaration.getSourceFile()!.getFilePath()
-
-        dependencies.push({
-            name: typeGuardName,
-            sourceFile: findOrCreate(project, outFilePath(sourcePath)),
-            isDefault: false
-        })
-
-        // NOTE: Cast to boolean to stop type guard property and prevent compile
-        //       errors.
-        return `${typeGuardName}(${varName}) as boolean`
+        return ands(...conditions)
     }
     if (type.isTuple()) {
         const types = type.getTupleElements()
@@ -233,21 +246,6 @@ function typeConditions(varName: string, type: Type, isOptional: boolean, depend
             return acc
         }, [`Array.isArray(${varName})`])
         return ands(...conditions)
-    }
-    if (isFunctionType(type)) {
-        return typeOf(varName, "function")
-    }
-    if (type.isObject()) {
-        try {
-            const properties = type.getProperties()
-            const propertySignatures = properties.map(p => p.getDeclarations()[0] as PropertySignature)
-            return objectConditions(varName, propertySignatures, dependencies, project)
-        } catch (error) {
-            if (error instanceof TypeError) {
-                console.error(`ERROR: Internal ts-simple-ast error for ${type.getText()}`, error)
-            }
-            return null
-        }
     }
     if (type.isLiteral()) {
         if (type.isEnumLiteral()) {
@@ -274,13 +272,6 @@ function propertyConditions(objName: string, property: PropertySignature, depend
 
 function propertiesConditions(varName: string, properties: ReadonlyArray<PropertySignature>, dependencies: Dependency[], project: Project): string[] {
     return properties.map(prop => propertyConditions(varName, prop, dependencies, project)).filter(v => v !== null) as string[]
-}
-
-function objectConditions(varName: string, properties: ReadonlyArray<PropertySignature>, dependencies: Dependency[], project: Project): string {
-    return ands(
-        typeOf(varName, "object"),
-        ...propertiesConditions(varName, properties, dependencies, project)
-    )
 }
 
 function generateTypeGuard(functionName: string, typeName: string, type: Type, dependencies: Dependency[], project: Project): string {
