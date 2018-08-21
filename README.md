@@ -20,7 +20,7 @@ $ npm link
 
 ## Usage
 
-Annotate interfaces in your project. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` property.
+Annotate interfaces in your project. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
 
 ```ts
 // my-project/Person.ts
