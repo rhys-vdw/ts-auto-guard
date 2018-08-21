@@ -1,23 +1,28 @@
+import { flatMap } from 'lodash'
 import Project, {
+  ExportableNode,
+  JSDoc,
+  Node,
   PropertySignature,
+  SourceFile,
   Type,
   TypeGuards,
-  JSDoc,
-  ExportableNode,
-  Node,
-  SourceFile,
 } from 'ts-simple-ast'
-import { flatMap } from 'lodash'
 
 // -- Types --
 
-interface Dependency {
+interface IDependency {
   sourceFile: SourceFile
   name: string
   isDefault: boolean
 }
 
 // -- Helpers --
+
+function reportError(message: string, ...args: any[]) {
+  // tslint:disable-next-line:no-console
+  console.error(`ERROR: ${message}`, ...args)
+}
 
 function findExportableNode(type: Type): ExportableNode & Node | null {
   const symbol = type.getSymbol()
@@ -32,7 +37,7 @@ function findExportableNode(type: Type): ExportableNode & Node | null {
   )
 }
 
-function typeToDependency(type: Type): Dependency | null {
+function typeToDependency(type: Type): IDependency | null {
   const exportable = findExportableNode(type)
   if (exportable === null) {
     return null
@@ -43,9 +48,7 @@ function typeToDependency(type: Type): Dependency | null {
   const isDefault = exportable.isDefaultExport()
 
   if (!exportable.isExported()) {
-    console.error(
-      `ERROR: ${name} is not exported from ${sourceFile.getFilePath()}`
-    )
+    reportError(`${name} is not exported from ${sourceFile.getFilePath()}`)
   }
 
   return { sourceFile, name, isDefault }
@@ -57,18 +60,25 @@ function outFilePath(sourcePath: string) {
 
 // https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
 function isClassType(type: Type): boolean {
-  if (type.getConstructSignatures().length > 0) return true
+  if (type.getConstructSignatures().length > 0) {
+    return true
+  }
 
   const symbol = type.getSymbol()
-  if (symbol == null) return false
+  if (symbol == null) {
+    return false
+  }
 
   for (const declaration of symbol.getDeclarations()) {
-    if (TypeGuards.isClassDeclaration(declaration)) return true
+    if (TypeGuards.isClassDeclaration(declaration)) {
+      return true
+    }
     if (
       TypeGuards.isVariableDeclaration(declaration) &&
       declaration.getType().getConstructSignatures().length > 0
-    )
+    ) {
       return true
+    }
   }
 
   return false
@@ -101,7 +111,7 @@ function getTypeGuardName(jsDocs: JSDoc[]): string | null {
       if (match !== null) {
         const [, typeGuardName, command] = match
         if (command !== 'type-guard') {
-          console.error(`ERROR: command ${command} is not supported!`)
+          reportError(`command ${command} is not supported!`)
           return null
         }
         return typeGuardName
@@ -133,7 +143,7 @@ function typeUnionConditions(
   varName: string,
   types: Type[],
   isOptional: boolean,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project
 ): string {
   const conditions: string[] = []
@@ -155,11 +165,12 @@ function parens(code: string) {
 function arrayCondition(
   varName: string,
   arrayType: Type,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project
 ): string {
-  if (arrayType.getText() === 'never')
+  if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
+  }
   const conditions = typeConditions(
     'e',
     arrayType,
@@ -168,8 +179,8 @@ function arrayCondition(
     project
   )
   if (conditions === null) {
-    console.error(
-      `ERROR: No conditions for ${varName}, with array type ${arrayType.getText()}`
+    reportError(
+      `No conditions for ${varName}, with array type ${arrayType.getText()}`
     )
   }
   return ands(
@@ -182,12 +193,12 @@ function typeConditions(
   varName: string,
   type: Type,
   isOptional: boolean,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project,
   useGuard: boolean = true
 ): string | null {
-  function addDependency(type: Type) {
-    const dependency = typeToDependency(type)
+  function addDependency(dependencyType: Type) {
+    const dependency = typeToDependency(dependencyType)
     if (dependency !== null) {
       dependencies.push(dependency)
     }
@@ -258,9 +269,7 @@ function typeConditions(
       )
       const declaration = declarations.find(TypeGuards.isInterfaceDeclaration)
       if (declaration === undefined) {
-        console.error(
-          `ERROR: Couldn't find declaration for type ${type.getText()}`
-        )
+        reportError(`Couldn't find declaration for type ${type.getText()}`)
         return null
       }
 
@@ -271,9 +280,9 @@ function typeConditions(
         const sourcePath = declaration.getSourceFile()!.getFilePath()
 
         dependencies.push({
+          isDefault: false,
           name: typeGuardName,
           sourceFile: findOrCreate(project, outFilePath(sourcePath)),
-          isDefault: false,
         })
 
         // NOTE: Cast to boolean to stop type guard property and prevent compile
@@ -282,10 +291,10 @@ function typeConditions(
       }
 
       if (!useGuard || typeGuardName === null) {
-        declaration.getBaseTypes().forEach(type => {
+        declaration.getBaseTypes().forEach(baseType => {
           const condition = typeConditions(
             varName,
-            type,
+            baseType,
             false,
             dependencies,
             project
@@ -306,7 +315,6 @@ function typeConditions(
     } else {
       // Get object literal properties...
       try {
-        console.log('type', type.getText())
         const properties = type.getProperties()
         const propertySignatures = properties.map(
           p => p.getDeclarations()[0] as PropertySignature
@@ -321,7 +329,7 @@ function typeConditions(
         )
       } catch (error) {
         if (error instanceof TypeError) {
-          console.error(
+          reportError(
             `ERROR: Internal ts-simple-ast error for ${type.getText()}`,
             error
           )
@@ -333,15 +341,17 @@ function typeConditions(
   if (type.isTuple()) {
     const types = type.getTupleElements()
     const conditions = types.reduce(
-      (acc, type, i) => {
+      (acc, elementType, i) => {
         const condition = typeConditions(
           `${varName}[${i}]`,
-          type,
+          elementType,
           false,
           dependencies,
           project
         )
-        if (condition !== null) acc.push(condition)
+        if (condition !== null) {
+          acc.push(condition)
+        }
         return acc
       },
       [`Array.isArray(${varName})`]
@@ -356,11 +366,11 @@ function typeConditions(
         .find(TypeGuards.isEnumMember)!
         .getParent()
       if (node === undefined) {
-        console.error("ERROR: Couldn't find enum literal parent")
+        reportError("Couldn't find enum literal parent")
         return null
       }
       if (!TypeGuards.isEnumDeclaration(node)) {
-        console.error('ERROR: Enum literal parent was not an enum declaration')
+        reportError('Enum literal parent was not an enum declaration')
         return null
       }
       addDependency(type)
@@ -373,7 +383,7 @@ function typeConditions(
 function propertyConditions(
   objName: string,
   property: PropertySignature,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project
 ): string | null {
   const varName = `${objName}.${property.getName()}`
@@ -389,7 +399,7 @@ function propertyConditions(
 function propertiesConditions(
   varName: string,
   properties: ReadonlyArray<PropertySignature>,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project
 ): string[] {
   return properties
@@ -401,7 +411,7 @@ function generateTypeGuard(
   functionName: string,
   typeName: string,
   type: Type,
-  dependencies: Dependency[],
+  dependencies: IDependency[],
   project: Project
 ): string {
   const conditions = typeConditions(
@@ -441,7 +451,7 @@ export function generate(paths: string[]) {
   project.addExistingSourceFiles(paths)
 
   project.getSourceFiles().forEach(sourceFile => {
-    const dependencies: Dependency[] = []
+    const dependencies: IDependency[] = []
     const functions = sourceFile
       .getChildAtIndex(0)
       .getChildren()
@@ -455,7 +465,7 @@ export function generate(paths: string[]) {
             return acc
           }
           if (!TypeGuards.isExportableNode(child)) {
-            console.error(`ERROR: Must be exportable:\n\n${child.getText()}\n`)
+            reportError(`Must be exportable:\n\n${child.getText()}\n`)
             return acc
           }
           if (
@@ -464,9 +474,7 @@ export function generate(paths: string[]) {
             TypeGuards.isTypeAliasDeclaration(child)
           ) {
             if (!child.isExported()) {
-              console.error(
-                `ERROR: Node must be exported:\n\n${child.getText()}\n`
-              )
+              reportError(`Node must be exported:\n\n${child.getText()}\n`)
               return acc
             }
             acc.push(
@@ -479,12 +487,12 @@ export function generate(paths: string[]) {
               )
             )
             dependencies.push({
-              name: child.getName(),
               isDefault: child.isDefaultExport(),
+              name: child.getName(),
               sourceFile,
             })
           } else {
-            console.error(`ERROR: Unsupported:\n\n${child.getText()}\n`)
+            reportError(`Unsupported:\n\n${child.getText()}\n`)
             return acc
           }
           return acc
@@ -498,9 +506,9 @@ export function generate(paths: string[]) {
 
       // Dedupe imports
       const imports = dependencies.reduce(
-        (acc, { sourceFile, isDefault, name }) => {
+        (acc, { sourceFile: dependencyFile, isDefault, name }) => {
           if (!acc.has(sourceFile)) {
-            acc.set(sourceFile, {
+            acc.set(dependencyFile, {
               default: undefined,
               named: new Set<string>(),
             })
@@ -508,8 +516,8 @@ export function generate(paths: string[]) {
           const element = acc.get(sourceFile)!
           if (isDefault) {
             if (element.default !== undefined && element.default !== name) {
-              console.error(
-                `ERROR: Conflicting default export for "${sourceFile.getFilePath()}": "${name}" vs "${
+              reportError(
+                `Conflicting default export for "${sourceFile.getFilePath()}": "${name}" vs "${
                   element.default
                 }"`
               )

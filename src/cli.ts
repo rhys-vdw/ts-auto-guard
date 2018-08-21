@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* tslint:disable:no-console */
+
 import { generate } from './index'
 
 const [, ...paths] = process.argv
