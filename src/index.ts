@@ -296,7 +296,6 @@ function findOrCreate(project: Project, path: string): SourceFile {
     return outFile
  }
 
-
 function clearOrCreate(project: Project, path: string): SourceFile {
     return project.createSourceFile(path, "", { overwrite: true })
  }
