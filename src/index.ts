@@ -329,6 +329,7 @@ function typeConditions(
         )
       } catch (error) {
         if (error instanceof TypeError) {
+          // see https://github.com/dsherret/ts-simple-ast/issues/397
           reportError(
             `ERROR: Internal ts-simple-ast error for ${type.getText()}`,
             error
