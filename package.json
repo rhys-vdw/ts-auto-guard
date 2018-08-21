@@ -5,7 +5,9 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 775 lib/cli.js"
+    "build": "tsc && chmod 775 lib/cli.js",
+    "prettier": "prettier --single-quote --trailing-comma es5 --write --no-semi src/**/*.ts",
+    "prettier-watch": "onchange src/**/*.ts -- yarn run prettier -- {{changed}}"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
@@ -20,6 +22,8 @@
     "typescript": "^3.0.1"
   },
   "devDependencies": {
-    "@types/node": "^10.7.0"
+    "@types/node": "^10.7.0",
+    "onchange": "^4.1.0",
+    "prettier": "^1.14.2"
   }
 }
