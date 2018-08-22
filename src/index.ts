@@ -204,7 +204,7 @@ function typeConditions(
     }
   }
   if (type.isNull()) {
-    return eq(varName, "null")
+    return eq(varName, 'null')
   }
   if (type.getText() === 'any') {
     return null
