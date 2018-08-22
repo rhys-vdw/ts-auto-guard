@@ -20,6 +20,9 @@ interface IDependency {
 // -- Helpers --
 
 function reportError(message: string, ...args: any[]) {
+  if (process.env.NODE_ENV === 'test') {
+    throw new Error(message)
+  }
   // tslint:disable-next-line:no-console
   console.error(`ERROR: ${message}`, ...args)
 }
@@ -480,13 +483,16 @@ function clearOrCreate(project: Project, path: string): SourceFile {
   return project.createSourceFile(path, '', { overwrite: true })
 }
 
-export async function generate(paths: ReadonlyArray<string>) {
+export async function generate(paths: ReadonlyArray<string>): Promise<void> {
   const project = new Project({
     addFilesFromTsConfig: paths.length === 0,
     tsConfigFilePath: './tsconfig.json',
   })
   project.addExistingSourceFiles(paths as string[])
+  return generateProject(project)
+}
 
+export async function generateProject(project: Project): Promise<void> {
   project.getSourceFiles().forEach(sourceFile => {
     const dependencies: IDependency[] = []
     const functions = sourceFile
