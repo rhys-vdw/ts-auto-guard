@@ -189,6 +189,146 @@ function arrayCondition(
   )
 }
 
+function objectCondition(
+  varName: string,
+  type: Type,
+  dependencies: IDependency[],
+  useGuard: boolean,
+  project: Project
+): string | null {
+  const conditions = [
+    typeOf(varName, isFunctionType(type) ? 'function' : 'object'),
+  ]
+
+  if (type.isInterface()) {
+    const declarations = type.getSymbol()!.getDeclarations()
+    const docs = flatMap(
+      declarations,
+      d => (TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : [])
+    )
+    const declaration = declarations.find(TypeGuards.isInterfaceDeclaration)
+    if (declaration === undefined) {
+      reportError(`Couldn't find declaration for type ${type.getText()}`)
+      return null
+    }
+
+    const typeGuardName = getTypeGuardName(docs)
+    if (useGuard && typeGuardName !== null) {
+      // TODO: This line returns the path lower cased.
+      // https://github.com/dsherret/ts-simple-ast/issues/394
+      const sourcePath = declaration.getSourceFile()!.getFilePath()
+
+      dependencies.push({
+        isDefault: false,
+        name: typeGuardName,
+        sourceFile: findOrCreate(project, outFilePath(sourcePath)),
+      })
+
+      // NOTE: Cast to boolean to stop type guard property and prevent compile
+      //       errors.
+      return `${typeGuardName}(${varName}) as boolean`
+    }
+
+    if (!useGuard || typeGuardName === null) {
+      declaration.getBaseTypes().forEach(baseType => {
+        const condition = typeConditions(
+          varName,
+          baseType,
+          false,
+          dependencies,
+          project
+        )
+        if (condition !== null) {
+          conditions.push(condition)
+        }
+      })
+      conditions.push(
+        ...propertiesConditions(
+          varName,
+          declaration.getProperties(),
+          dependencies,
+          project
+        )
+      )
+    }
+  } else {
+    // Get object literal properties...
+    try {
+      const properties = type.getProperties()
+      const propertySignatures = properties.map(
+        p => p.getDeclarations()[0] as PropertySignature
+      )
+      conditions.push(
+        ...propertiesConditions(
+          varName,
+          propertySignatures,
+          dependencies,
+          project
+        )
+      )
+    } catch (error) {
+      if (error instanceof TypeError) {
+        // see https://github.com/dsherret/ts-simple-ast/issues/397
+        reportError(
+          `ERROR: Internal ts-simple-ast error for ${type.getText()}`,
+          error
+        )
+      }
+    }
+  }
+  return ands(...conditions)
+}
+
+function tupleCondition(
+  varName: string,
+  type: Type,
+  dependencies: IDependency[],
+  project: Project
+): string {
+  const types = type.getTupleElements()
+  const conditions = types.reduce(
+    (acc, elementType, i) => {
+      const condition = typeConditions(
+        `${varName}[${i}]`,
+        elementType,
+        false,
+        dependencies,
+        project
+      )
+      if (condition !== null) {
+        acc.push(condition)
+      }
+      return acc
+    },
+    [`Array.isArray(${varName})`]
+  )
+  return ands(...conditions)
+}
+
+function literalCondition(
+  varName: string,
+  type: Type,
+  addDependency: (type: Type) => void
+): string | null {
+  if (type.isEnumLiteral()) {
+    const node = type
+      .getSymbol()!
+      .getDeclarations()
+      .find(TypeGuards.isEnumMember)!
+      .getParent()
+    if (node === undefined) {
+      reportError("Couldn't find enum literal parent")
+      return null
+    }
+    if (!TypeGuards.isEnumDeclaration(node)) {
+      reportError('Enum literal parent was not an enum declaration')
+      return null
+    }
+    addDependency(type)
+  }
+  return eq(varName, type.getText())
+}
+
 function typeConditions(
   varName: string,
   type: Type,
@@ -263,126 +403,13 @@ function typeConditions(
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
   if (type.isObject()) {
-    const conditions = [
-      typeOf(varName, isFunctionType(type) ? 'function' : 'object'),
-    ]
-
-    if (type.isInterface()) {
-      const declarations = type.getSymbol()!.getDeclarations()
-      const docs = flatMap(
-        declarations,
-        d => (TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : [])
-      )
-      const declaration = declarations.find(TypeGuards.isInterfaceDeclaration)
-      if (declaration === undefined) {
-        reportError(`Couldn't find declaration for type ${type.getText()}`)
-        return null
-      }
-
-      const typeGuardName = getTypeGuardName(docs)
-      if (useGuard && typeGuardName !== null) {
-        // TODO: This line returns the path lower cased.
-        // https://github.com/dsherret/ts-simple-ast/issues/394
-        const sourcePath = declaration.getSourceFile()!.getFilePath()
-
-        dependencies.push({
-          isDefault: false,
-          name: typeGuardName,
-          sourceFile: findOrCreate(project, outFilePath(sourcePath)),
-        })
-
-        // NOTE: Cast to boolean to stop type guard property and prevent compile
-        //       errors.
-        return `${typeGuardName}(${varName}) as boolean`
-      }
-
-      if (!useGuard || typeGuardName === null) {
-        declaration.getBaseTypes().forEach(baseType => {
-          const condition = typeConditions(
-            varName,
-            baseType,
-            false,
-            dependencies,
-            project
-          )
-          if (condition !== null) {
-            conditions.push(condition)
-          }
-        })
-        conditions.push(
-          ...propertiesConditions(
-            varName,
-            declaration.getProperties(),
-            dependencies,
-            project
-          )
-        )
-      }
-    } else {
-      // Get object literal properties...
-      try {
-        const properties = type.getProperties()
-        const propertySignatures = properties.map(
-          p => p.getDeclarations()[0] as PropertySignature
-        )
-        conditions.push(
-          ...propertiesConditions(
-            varName,
-            propertySignatures,
-            dependencies,
-            project
-          )
-        )
-      } catch (error) {
-        if (error instanceof TypeError) {
-          // see https://github.com/dsherret/ts-simple-ast/issues/397
-          reportError(
-            `ERROR: Internal ts-simple-ast error for ${type.getText()}`,
-            error
-          )
-        }
-      }
-    }
-    return ands(...conditions)
+    return objectCondition(varName, type, dependencies, useGuard, project)
   }
   if (type.isTuple()) {
-    const types = type.getTupleElements()
-    const conditions = types.reduce(
-      (acc, elementType, i) => {
-        const condition = typeConditions(
-          `${varName}[${i}]`,
-          elementType,
-          false,
-          dependencies,
-          project
-        )
-        if (condition !== null) {
-          acc.push(condition)
-        }
-        return acc
-      },
-      [`Array.isArray(${varName})`]
-    )
-    return ands(...conditions)
+    return tupleCondition(varName, type, dependencies, project)
   }
   if (type.isLiteral()) {
-    if (type.isEnumLiteral()) {
-      const node = type
-        .getSymbol()!
-        .getDeclarations()
-        .find(TypeGuards.isEnumMember)!
-        .getParent()
-      if (node === undefined) {
-        reportError("Couldn't find enum literal parent")
-        return null
-      }
-      if (!TypeGuards.isEnumDeclaration(node)) {
-        reportError('Enum literal parent was not an enum declaration')
-        return null
-      }
-      addDependency(type)
-    }
-    return eq(varName, type.getText())
+    return literalCondition(varName, type, addDependency)
   }
   return typeOf(varName, type.getText())
 }
