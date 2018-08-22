@@ -453,9 +453,12 @@ function clearOrCreate(project: Project, path: string): SourceFile {
   return project.createSourceFile(path, '', { overwrite: true })
 }
 
-export function generate(paths: string[]) {
-  const project = new Project()
-  project.addExistingSourceFiles(paths)
+export async function generate(paths: ReadonlyArray<string>) {
+  const project = new Project({
+    addFilesFromTsConfig: paths.length === 0,
+    tsConfigFilePath: './tsconfig.json',
+  })
+  project.addExistingSourceFiles(paths as string[])
 
   project.getSourceFiles().forEach(sourceFile => {
     const dependencies: IDependency[] = []

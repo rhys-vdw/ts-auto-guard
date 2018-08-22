@@ -4,17 +4,16 @@
 
 import { generate } from './index'
 
-const [, ...paths] = process.argv
-
-if (paths.length === 0) {
-  console.error(`specify some files`)
-  process.exit(1)
-}
+const [, , ...paths] = process.argv
 
 generate(paths)
   .then(() => {
     console.log('Done!')
   })
   .catch(error => {
-    console.error(error)
+    if (error.code === 'ENOENT') {
+      console.error(error.message)
+    } else {
+      throw error
+    }
   })
