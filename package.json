@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 775 lib/cli.js",
     "format": "tslint --fix --project ./tsconfig.json && prettier --single-quote --trailing-comma es5 --write --no-semi src/**/*.ts",
-    "format-watch": "onchange src/**/*.ts -- yarn run format -- {{changed}}"
+    "format-watch": "onchange src/**/*.ts -- yarn run format {{changed}}"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
