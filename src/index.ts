@@ -203,6 +203,9 @@ function typeConditions(
       dependencies.push(dependency)
     }
   }
+  if (type.isNull()) {
+    return eq(varName, "null")
+  }
   if (type.getText() === 'any') {
     return null
   }
