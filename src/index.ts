@@ -212,6 +212,9 @@ function typeConditions(
   if (type.getText() === 'never') {
     return typeOf(varName, 'undefined')
   }
+  if (type.isBoolean()) {
+    return typeOf(varName, 'boolean')
+  }
   if (type.isUnion()) {
     // Seems to be bug here where enums can only be detected with enum
     // literal + union check... odd.
