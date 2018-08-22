@@ -508,17 +508,17 @@ export function generate(paths: string[]) {
       // Dedupe imports
       const imports = dependencies.reduce(
         (acc, { sourceFile: dependencyFile, isDefault, name }) => {
-          if (!acc.has(sourceFile)) {
+          if (!acc.has(dependencyFile)) {
             acc.set(dependencyFile, {
               default: undefined,
               named: new Set<string>(),
             })
           }
-          const element = acc.get(sourceFile)!
+          const element = acc.get(dependencyFile)!
           if (isDefault) {
             if (element.default !== undefined && element.default !== name) {
               reportError(
-                `Conflicting default export for "${sourceFile.getFilePath()}": "${name}" vs "${
+                `Conflicting default export for "${dependencyFile.getFilePath()}": "${name}" vs "${
                   element.default
                 }"`
               )
