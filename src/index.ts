@@ -1,6 +1,7 @@
 import { flatMap } from 'lodash'
 import Project, {
   ExportableNode,
+  ImportDeclarationStructure,
   JSDoc,
   Node,
   PropertySignature,
@@ -8,14 +9,6 @@ import Project, {
   Type,
   TypeGuards,
 } from 'ts-simple-ast'
-
-// -- Types --
-
-interface IDependency {
-  sourceFile: SourceFile
-  name: string
-  isDefault: boolean
-}
 
 // -- Helpers --
 
@@ -40,10 +33,10 @@ function findExportableNode(type: Type): ExportableNode & Node | null {
   )
 }
 
-function typeToDependency(type: Type): IDependency | null {
+function typeToDependency(type: Type, addDependency: IAddDependency): void {
   const exportable = findExportableNode(type)
   if (exportable === null) {
-    return null
+    return
   }
 
   const sourceFile = exportable.getSourceFile()
@@ -54,7 +47,7 @@ function typeToDependency(type: Type): IDependency | null {
     reportError(`${name} is not exported from ${sourceFile.getFilePath()}`)
   }
 
-  return { sourceFile, name, isDefault }
+  addDependency(sourceFile, name, isDefault)
 }
 
 function outFilePath(sourcePath: string) {
@@ -146,7 +139,7 @@ function typeUnionConditions(
   varName: string,
   types: Type[],
   isOptional: boolean,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string {
   const conditions: string[] = []
@@ -155,7 +148,7 @@ function typeUnionConditions(
   }
   conditions.push(
     ...(types
-      .map(type => typeConditions(varName, type, false, dependencies, project))
+      .map(type => typeConditions(varName, type, false, addDependency, project))
       .filter(v => v !== null) as string[])
   )
   return parens(ors(...conditions))
@@ -168,7 +161,7 @@ function parens(code: string) {
 function arrayCondition(
   varName: string,
   arrayType: Type,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string {
   if (arrayType.getText() === 'never') {
@@ -178,7 +171,7 @@ function arrayCondition(
     'e',
     arrayType,
     false,
-    dependencies,
+    addDependency,
     project
   )
   if (conditions === null) {
@@ -195,7 +188,7 @@ function arrayCondition(
 function objectCondition(
   varName: string,
   type: Type,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   useGuard: boolean,
   project: Project
 ): string | null {
@@ -217,15 +210,13 @@ function objectCondition(
 
     const typeGuardName = getTypeGuardName(docs)
     if (useGuard && typeGuardName !== null) {
-      // TODO: This line returns the path lower cased.
-      // https://github.com/dsherret/ts-simple-ast/issues/394
       const sourcePath = declaration.getSourceFile()!.getFilePath()
 
-      dependencies.push({
-        isDefault: false,
-        name: typeGuardName,
-        sourceFile: findOrCreate(project, outFilePath(sourcePath)),
-      })
+      addDependency(
+        findOrCreate(project, outFilePath(sourcePath)),
+        typeGuardName,
+        false
+      )
 
       // NOTE: Cast to boolean to stop type guard property and prevent compile
       //       errors.
@@ -238,7 +229,7 @@ function objectCondition(
           varName,
           baseType,
           false,
-          dependencies,
+          addDependency,
           project
         )
         if (condition !== null) {
@@ -249,7 +240,7 @@ function objectCondition(
         ...propertiesConditions(
           varName,
           declaration.getProperties(),
-          dependencies,
+          addDependency,
           project
         )
       )
@@ -265,7 +256,7 @@ function objectCondition(
         ...propertiesConditions(
           varName,
           propertySignatures,
-          dependencies,
+          addDependency,
           project
         )
       )
@@ -285,7 +276,7 @@ function objectCondition(
 function tupleCondition(
   varName: string,
   type: Type,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string {
   const types = type.getTupleElements()
@@ -295,7 +286,7 @@ function tupleCondition(
         `${varName}[${i}]`,
         elementType,
         false,
-        dependencies,
+        addDependency,
         project
       )
       if (condition !== null) {
@@ -311,7 +302,7 @@ function tupleCondition(
 function literalCondition(
   varName: string,
   type: Type,
-  addDependency: (type: Type) => void
+  addDependency: IAddDependency
 ): string | null {
   if (type.isEnumLiteral()) {
     const node = type
@@ -327,7 +318,7 @@ function literalCondition(
       reportError('Enum literal parent was not an enum declaration')
       return null
     }
-    addDependency(type)
+    typeToDependency(type, addDependency)
   }
   return eq(varName, type.getText())
 }
@@ -336,16 +327,10 @@ function typeConditions(
   varName: string,
   type: Type,
   isOptional: boolean,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project,
   useGuard: boolean = true
 ): string | null {
-  function addDependency(dependencyType: Type) {
-    const dependency = typeToDependency(dependencyType)
-    if (dependency !== null) {
-      dependencies.push(dependency)
-    }
-  }
   if (type.isNull()) {
     return eq(varName, 'null')
   }
@@ -362,13 +347,13 @@ function typeConditions(
     // Seems to be bug here where enums can only be detected with enum
     // literal + union check... odd.
     if (type.isEnumLiteral()) {
-      addDependency(type)
+      typeToDependency(type, addDependency)
     }
     return typeUnionConditions(
       varName,
       type.getUnionTypes(),
       isOptional,
-      dependencies,
+      addDependency,
       project
     )
   }
@@ -377,7 +362,7 @@ function typeConditions(
       varName,
       type.getIntersectionTypes(),
       isOptional,
-      dependencies,
+      addDependency,
       project
     )
   }
@@ -386,30 +371,30 @@ function typeConditions(
       varName,
       [type],
       isOptional,
-      dependencies,
+      addDependency,
       project
     )
   }
   if (type.isArray()) {
-    return arrayCondition(varName, type.getArrayType()!, dependencies, project)
+    return arrayCondition(varName, type.getArrayType()!, addDependency, project)
   }
   if (isReadonlyArrayType(type)) {
     return arrayCondition(
       varName,
       getReadonlyArrayType(type)!,
-      dependencies,
+      addDependency,
       project
     )
   }
   if (isClassType(type)) {
-    addDependency(type)
+    typeToDependency(type, addDependency)
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
   if (type.isObject()) {
-    return objectCondition(varName, type, dependencies, useGuard, project)
+    return objectCondition(varName, type, addDependency, useGuard, project)
   }
   if (type.isTuple()) {
-    return tupleCondition(varName, type, dependencies, project)
+    return tupleCondition(varName, type, addDependency, project)
   }
   if (type.isLiteral()) {
     return literalCondition(varName, type, addDependency)
@@ -420,7 +405,7 @@ function typeConditions(
 function propertyConditions(
   objName: string,
   property: PropertySignature,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string | null {
   const varName = `${objName}.${property.getName()}`
@@ -428,7 +413,7 @@ function propertyConditions(
     varName,
     property.getType(),
     property.hasQuestionToken(),
-    dependencies,
+    addDependency,
     project
   )
 }
@@ -436,11 +421,11 @@ function propertyConditions(
 function propertiesConditions(
   varName: string,
   properties: ReadonlyArray<PropertySignature>,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string[] {
   return properties
-    .map(prop => propertyConditions(varName, prop, dependencies, project))
+    .map(prop => propertyConditions(varName, prop, addDependency, project))
     .filter(v => v !== null) as string[]
 }
 
@@ -448,14 +433,14 @@ function generateTypeGuard(
   functionName: string,
   typeName: string,
   type: Type,
-  dependencies: IDependency[],
+  addDependency: IAddDependency,
   project: Project
 ): string {
   const conditions = typeConditions(
     'obj',
     type,
     false,
-    dependencies,
+    addDependency,
     project,
     false
   )
@@ -483,6 +468,39 @@ function clearOrCreate(project: Project, path: string): SourceFile {
   return project.createSourceFile(path, '', { overwrite: true })
 }
 
+interface Imports {
+  [exportName: string]: string
+}
+type Dependencies = Map<SourceFile, Imports>
+type IAddDependency = (
+  sourceFile: SourceFile,
+  exportName: string,
+  isDefault: boolean
+) => void
+
+function createAddDependency(dependencies: Dependencies): IAddDependency {
+  return function addDependency(sourceFile, name, isDefault) {
+    const alias = name
+    if (isDefault) {
+      name = 'default'
+    }
+    let imports = dependencies.get(sourceFile)
+    if (imports === undefined) {
+      imports = {}
+      dependencies.set(sourceFile, imports)
+    }
+
+    const previousAlias = imports[name]
+    if (previousAlias !== undefined && previousAlias !== alias) {
+      reportError(
+        `Conflicting export alias for "${sourceFile.getFilePath()}": "${alias}" vs "${previousAlias}"`
+      )
+    }
+
+    imports[name] = alias
+  }
+}
+
 export async function generate(paths: ReadonlyArray<string>): Promise<void> {
   const project = new Project({
     addFilesFromTsConfig: paths.length === 0,
@@ -494,7 +512,8 @@ export async function generate(paths: ReadonlyArray<string>): Promise<void> {
 
 export async function generateProject(project: Project): Promise<void> {
   project.getSourceFiles().forEach(sourceFile => {
-    const dependencies: IDependency[] = []
+    const dependencies: Dependencies = new Map()
+    const addDependency = createAddDependency(dependencies)
     const functions = sourceFile
       .getChildAtIndex(0)
       .getChildren()
@@ -525,15 +544,12 @@ export async function generateProject(project: Project): Promise<void> {
                 typeGuardName,
                 child.getName(),
                 child.getType(),
-                dependencies,
+                addDependency,
                 project
               )
             )
-            dependencies.push({
-              isDefault: child.isDefaultExport(),
-              name: child.getName(),
-              sourceFile,
-            })
+            const exportName = child.getName()
+            addDependency(sourceFile, exportName, child.isDefaultExport())
           } else {
             reportError(`Unsupported:\n\n${child.getText()}\n`)
             return acc
@@ -547,52 +563,27 @@ export async function generateProject(project: Project): Promise<void> {
       const outPath = outFilePath(sourceFile.getFilePath())
       const outFile = clearOrCreate(project, outPath)
 
-      // Dedupe imports
-      const imports = dependencies.reduce(
-        (acc, { sourceFile: dependencyFile, isDefault, name }) => {
-          if (!acc.has(dependencyFile)) {
-            acc.set(dependencyFile, {
-              default: undefined,
-              named: new Set<string>(),
-            })
-          }
-          const element = acc.get(dependencyFile)!
-          if (isDefault) {
-            if (element.default !== undefined && element.default !== name) {
-              reportError(
-                `Conflicting default export for "${dependencyFile.getFilePath()}": "${name}" vs "${
-                  element.default
-                }"`
-              )
-            }
-            element.default = name
-          } else {
-            element.named.add(name)
-          }
-          return acc
-        },
-        new Map<
-          SourceFile,
-          { default: string | undefined; named: Set<string> }
-        >()
-      )
-
-      // Add import declarations
-      for (const [
-        importFile,
-        { default: defaultImport, named },
-      ] of imports.entries()) {
-        // Don't self-import
-        if (importFile !== outFile) {
-          outFile.addImportDeclaration({
-            defaultImport,
-            moduleSpecifier: outFile.getRelativePathAsModuleSpecifierTo(
+      outFile.addImportDeclarations(
+        Array.from(dependencies.entries()).reduce(
+          (structures, [importFile, imports]) => {
+            const moduleSpecifier = outFile.getRelativePathAsModuleSpecifierTo(
               importFile
-            ),
-            namedImports: Array.from(named),
-          })
-        }
-      }
+            )
+            const defaultImport = imports.default
+            delete imports.default
+            const namedImports = Object.entries(imports).map(
+              ([alias, name]) => (alias === name ? name : { name, alias })
+            )
+            structures.push({
+              defaultImport,
+              moduleSpecifier,
+              namedImports,
+            })
+            return structures
+          },
+          [] as ImportDeclarationStructure[]
+        )
+      )
 
       outFile.addStatements(functions.join('\n'))
 
