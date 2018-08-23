@@ -105,7 +105,7 @@ function getReadonlyArrayType(type: Type): Type | undefined {
   return type.getTypeArguments()[0]
 }
 
-function getTypeGuardName(jsDocs: JSDoc[]): string | null {
+function getTypeGuardName(jsDocs: ReadonlyArray<JSDoc>): string | null {
   for (const doc of jsDocs) {
     for (const line of doc.getInnerText().split('\n')) {
       const match = line
