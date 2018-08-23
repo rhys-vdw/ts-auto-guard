@@ -13,9 +13,6 @@ import Project, {
 // -- Helpers --
 
 function reportError(message: string, ...args: any[]) {
-  if (process.env.NODE_ENV === 'test') {
-    throw new Error(message)
-  }
   // tslint:disable-next-line:no-console
   console.error(`ERROR: ${message}`, ...args)
 }
@@ -464,10 +461,6 @@ function findOrCreate(project: Project, path: string): SourceFile {
   return outFile
 }
 
-function clearOrCreate(project: Project, path: string): SourceFile {
-  return project.createSourceFile(path, '', { overwrite: true })
-}
-
 interface Imports {
   [exportName: string]: string
 }
@@ -507,10 +500,17 @@ export async function generate(paths: ReadonlyArray<string>): Promise<void> {
     tsConfigFilePath: './tsconfig.json',
   })
   project.addExistingSourceFiles(paths as string[])
-  return generateProject(project)
+  processProject(project)
+  return project.save()
 }
 
-export async function generateProject(project: Project): Promise<void> {
+export function processProject(project: Project) {
+  // Delete previously generated guard.
+  project
+    .getSourceFiles('./**/*.guard.ts')
+    .forEach(sourceFile => sourceFile.delete())
+
+  // Generate new guard files.
   project.getSourceFiles().forEach(sourceFile => {
     const dependencies: Dependencies = new Map()
     const addDependency = createAddDependency(dependencies)
@@ -537,7 +537,6 @@ export async function generateProject(project: Project): Promise<void> {
           ) {
             if (!child.isExported()) {
               reportError(`Node must be exported:\n\n${child.getText()}\n`)
-              return acc
             }
             acc.push(
               generateTypeGuard(
@@ -560,12 +559,18 @@ export async function generateProject(project: Project): Promise<void> {
       )
 
     if (functions.length > 0) {
-      const outPath = outFilePath(sourceFile.getFilePath())
-      const outFile = clearOrCreate(project, outPath)
+      const outFile = project.createSourceFile(
+        outFilePath(sourceFile.getFilePath()),
+        functions.join('\n'),
+        { overwrite: true }
+      )
 
       outFile.addImportDeclarations(
         Array.from(dependencies.entries()).reduce(
           (structures, [importFile, imports]) => {
+            if (outFile === importFile) {
+              return structures
+            }
             const moduleSpecifier = outFile.getRelativePathAsModuleSpecifierTo(
               importFile
             )
@@ -584,8 +589,6 @@ export async function generateProject(project: Project): Promise<void> {
           [] as ImportDeclarationStructure[]
         )
       )
-
-      outFile.addStatements(functions.join('\n'))
 
       const path = outFile.getRelativePathTo(sourceFile)
       outFile.insertStatements(

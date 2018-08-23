@@ -1,7 +1,7 @@
-// tslint:disable-next-line:no-implicit-dependencies
-import test from 'tape'
+import { each, pull } from "lodash"
+import test from 'tape' // tslint:disable-line:no-implicit-dependencies
 import Project from 'ts-simple-ast'
-import { generateProject } from '../src'
+import { processProject } from '../src'
 
 function ws(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
@@ -15,156 +15,212 @@ function createProject(): Project {
   })
 }
 
-function testGuard(
+function testProcessProject(
   typeDescription: string,
-  input: string,
-  output: string,
-  { skip }: { skip: boolean } = { skip: false }
+  input: { readonly [filenam: string]: string },
+  output: { [filename: string]: string | undefined },
+  { skip, only }: { skip?: boolean, only?: boolean } = {}
 ) {
-  ;(skip ? test.skip : test)(
-    `generates type guard for ${typeDescription}`,
+  const fn = skip ? test.skip : only ? test.only : test
+  fn(
+    typeDescription,
     t => {
       const project = createProject()
-
-      project.createSourceFile('./test.ts', input)
-      t.doesNotThrow(() => {
-        generateProject(project)
-        const guardFile = project.getSourceFile('./test.guard.ts')
-        t.ok(guardFile, 'no guard file emitted')
-        if (guardFile !== undefined) {
-          const result = guardFile.getText()
-          t.equal(ws(result), ws(output))
-        }
+      each(input, (content, filePath) => {
+        project.createSourceFile(filePath, content)
       })
+      project.saveSync()
+
+      const expectedFilenames = Object.keys(output)
+
+      t.doesNotThrow(() => {
+        processProject(project)
+      })
+
+      for (const sourceFile of project.getSourceFiles()) {
+        if (sourceFile.isSaved()) {
+          continue
+        }
+        const filePath = sourceFile.getFilePath().slice(1)
+        const content = output[filePath]
+        if (content === undefined) {
+          t.fail(`unexpected file ${filePath}`)
+        } else {
+          pull(expectedFilenames, filePath)
+          if (sourceFile !== undefined) {
+            const result = sourceFile.getText()
+            t.equal(ws(result), ws(content), filePath)
+          }
+        }
+      }
+      for (const filePath of expectedFilenames) {
+        t.fail(`${filePath} not found`)
+      }
       t.end()
     }
   )
 }
 
-testGuard(
-  'empty object',
-  `
-  /** @see {isEmpty} ts-auto-guard:type-guard */
-  export interface Empty {}`,
-  `
-  import { Empty } from "./test";
-
-   export function isEmpty(obj: any): obj is Empty {
-      return (
-          typeof obj === "object"
-      )
-  }`
+testProcessProject(
+  'removes existing .guard.ts files',
+  { 'test.guard.ts': `alert("hello")` },
+  { }
 )
 
-testGuard(
-  'boolean',
-  `
-  /** @see {isBool} ts-auto-guard:type-guard */
-  export type Bool = boolean`,
-  `
-  import { Bool } from "./test";
+testProcessProject(
+  'generates type guards for empty object',
+  { 'test.ts':
+    `
+    /** @see {isEmpty} ts-auto-guard:type-guard */
+    export interface Empty {}`,
+  },
+  { 'test.guard.ts':
+    `
+    import { Empty } from "./test";
 
-  export function isBool(obj: any): obj is Bool {
-      return (
-          typeof obj === "boolean"
-      )
-  }`
+    export function isEmpty(obj: any): obj is Empty {
+        return (
+            typeof obj === "object"
+        )
+    }`
+  }
 )
 
-testGuard(
-  'simple interface',
-  `
-  /** @see {isFoo} ts-auto-guard:type-guard */
-  export interface Foo {
-    foo: number,
-    bar: string
-  }`,
-  `
-  import { Foo } from "./test";
+testProcessProject(
+  'generates type guards for boolean',
+  { 'test.ts':
+    `
+    /** @see {isBool} ts-auto-guard:type-guard */
+    export type Bool = boolean`,
+  },
+  { 'test.guard.ts':
+    `
+    import { Bool } from "./test";
 
-  export function isFoo(obj: any): obj is Foo {
-      return (
-          typeof obj === "object" &&
-          typeof obj.foo === "number" &&
-          typeof obj.bar === "string"
-      )
-  }`
+    export function isBool(obj: any): obj is Bool {
+        return (
+            typeof obj === "boolean"
+        )
+    }`
+  }
 )
 
-testGuard(
-  'interface with optional field',
-  `
-  /** @see {isFoo} ts-auto-guard:type-guard */
-  export interface Foo {
-    foo?: number,
-    bar: number | undefined,
-    baz?: number | undefined
-  }`,
-  `
-  import { Foo } from "./test";
+testProcessProject(
+  'generates type guards for simple interface',
+  { 'test.ts':
+    `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: number,
+      bar: string
+    }`
+  },
+  { 'test.guard.ts':
+    `
+    import { Foo } from "./test";
 
-  export function isFoo(obj: any): obj is Foo {
-      return (
-          typeof obj === "object" &&
-          (
-            typeof obj.foo === "undefined" ||
-            typeof obj.foo === "number"
-          ) &&
-          (
-            typeof obj.bar === "undefined" ||
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            typeof obj.foo === "number" &&
+            typeof obj.bar === "string"
+        )
+    }`
+  }
+)
+
+testProcessProject(
+  'generates type guards for interface with optional field',
+  { 'test.ts':
+    `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo?: number,
+      bar: number | undefined,
+      baz?: number | undefined
+    }`
+  },
+  { 'test.guard.ts':
+    `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            (
+              typeof obj.foo === "undefined" ||
+              typeof obj.foo === "number"
+            ) &&
+            (
+              typeof obj.bar === "undefined" ||
+              typeof obj.bar === "number"
+            ) &&
+            (
+              typeof obj.baz === "undefined" ||
+              typeof obj.baz === "number"
+            )
+        )
+    }`
+  }
+)
+
+testProcessProject(
+  'generates type guards for nested interface',
+  { 'test.ts':
+    `
+    interface Bar {
+      bar: number
+    }
+
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: Bar,
+    }`,
+  },
+  { 'test.guard.ts':
+    `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            typeof obj.foo === "object" &&
+            typeof obj.foo.bar === "number"
+        )
+    }`
+  }
+)
+
+testProcessProject(
+  'generates type guards for nested interface with type guard',
+  { 'test.ts':
+    `
+    /** @see {isBar} ts-auto-guard:type-guard */
+    export interface Bar {
+      bar: number
+    }
+
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: Bar,
+    }`
+  },
+  { 'test.guard.ts':
+    `
+    import { Bar, Foo } from "./test";
+
+    export function isBar(obj: any): obj is Bar {
+        return (
+            typeof obj === "object" &&
             typeof obj.bar === "number"
-          ) &&
-          (
-            typeof obj.baz === "undefined" ||
-            typeof obj.baz === "number"
-          )
-      )
-  }`
-)
+        )
+    }
 
-testGuard(
-  'nested interface',
-  `
-  interface Bar {
-    bar: number
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            isBar(obj.foo) as boolean
+        )
+    }`
   }
-
-  /** @see {isFoo} ts-auto-guard:type-guard */
-  export interface Foo {
-    foo: Bar,
-  }`,
-  `
-  import { Foo } from "./test";
-
-  export function isFoo(obj: any): obj is Foo {
-      return (
-          typeof obj === "object" &&
-          typeof obj.foo === "object" &&
-          typeof obj.foo.bar === "number"
-      )
-  }`
-)
-
-testGuard(
-  'nested interface with type guard',
-  `
-  /** @see {isBar} ts-auto-guard:type-guard */
-  interface Bar {
-    bar: number
-  }
-
-  /** @see {isFoo} ts-auto-guard:type-guard */
-  export interface Foo {
-    foo: Bar,
-  }`,
-  `
-  import { Foo } from "./test";
-
-  export function isFoo(obj: any): obj is Foo {
-      return (
-          typeof obj === "object" &&
-          isBar(obj.foo) as boolean
-      )
-  }`,
-  { skip: true }
 )
