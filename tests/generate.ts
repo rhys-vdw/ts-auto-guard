@@ -17,8 +17,8 @@ function createProject(): Project {
 
 function testProcessProject(
   typeDescription: string,
-  input: { readonly [filenam: string]: string },
-  output: { [filename: string]: string | undefined },
+  input: { readonly [filename: string]: string },
+  output: { readonly [filename: string]: string },
   { skip, only }: { skip?: boolean, only?: boolean } = {}
 ) {
   const fn = skip ? test.skip : only ? test.only : test
