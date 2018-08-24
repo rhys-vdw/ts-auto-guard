@@ -4,11 +4,10 @@
   "description": "Generate type guard functions from TypeScript interfaces",
   "main": "lib/index.js",
   "scripts": {
-    "test": "NODE_ENV=test && tape -r ts-node/register tests/**/*.ts",
-    "test-spec": "yarn run test | tap-spec",
+    "test": "NODE_ENV=test && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc && chmod 775 lib/cli.js",
     "format": "tslint --fix --project ./tsconfig.json && prettier --single-quote --trailing-comma es5 --write --no-semi src/**/*.ts",
-    "format-watch": "onchange src/**/*.ts -- yarn run format {{changed}}"
+    "format-watch": "onchange src/**/*.ts tests/**/*.ts -- yarn run format {{changed}}"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
@@ -29,7 +28,7 @@
     "@types/tape": "^4.2.32",
     "onchange": "^4.1.0",
     "prettier": "^1.14.2",
-    "tap-spec": "^5.0.0",
+    "tap-diff": "^0.1.1",
     "tape": "^4.9.1",
     "ts-node": "^7.0.1"
   }

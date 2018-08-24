@@ -443,12 +443,11 @@ function generateTypeGuard(
   )
 
   return `
-        export function ${functionName}(obj: any): obj is ${typeName} {
-            return (
-                ${conditions}
-            )
-        }
-    `
+    export function ${functionName}(obj: any): obj is ${typeName} {
+        return (
+            ${conditions}
+        )
+    }`
 }
 
 // -- Process project --
