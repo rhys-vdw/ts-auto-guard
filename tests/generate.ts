@@ -242,12 +242,11 @@ testProcessProject(
     export function isFoo(obj: any): obj is Foo {
         return (
             typeof obj === "object" &&
-            typeof obj.foo === "number" &&
-            typeof obj.bar === "number"
+            typeof obj.bar === "number" &&
+            typeof obj.foo === "number"
         )
     }`,
-  },
-  { skip: true } // issue #19
+  }
 )
 
 testProcessProject(
@@ -281,6 +280,5 @@ testProcessProject(
             typeof obj.foo === "number"
         )
     }`,
-  },
-  { skip: true } // issue #19
+  }
 )

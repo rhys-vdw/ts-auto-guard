@@ -160,12 +160,7 @@ function arrayCondition(
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
   }
-  const conditions = typeConditions(
-    'e',
-    arrayType,
-    addDependency,
-    project
-  )
+  const conditions = typeConditions('e', arrayType, addDependency, project)
   if (conditions === null) {
     reportError(
       `No conditions for ${varName}, with array type ${arrayType.getText()}`
@@ -177,6 +172,10 @@ function arrayCondition(
   )
 }
 
+function objectTypeCondition(varName: string, type: Type): string {
+  return typeOf(varName, isFunctionType(type) ? 'function' : 'object')
+}
+
 function objectCondition(
   varName: string,
   type: Type,
@@ -184,9 +183,7 @@ function objectCondition(
   useGuard: boolean,
   project: Project
 ): string | null {
-  const conditions = [
-    typeOf(varName, isFunctionType(type) ? 'function' : 'object'),
-  ]
+  const conditions: string[] = []
 
   if (type.isInterface()) {
     const declarations = type.getSymbol()!.getDeclarations()
@@ -194,6 +191,8 @@ function objectCondition(
       declarations,
       d => (TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : [])
     )
+
+    // TODO: https://github.com/rhys-vdw/ts-auto-guard/issues/29
     const declaration = declarations.find(TypeGuards.isInterfaceDeclaration)
     if (declaration === undefined) {
       reportError(`Couldn't find declaration for type ${type.getText()}`)
@@ -227,6 +226,9 @@ function objectCondition(
           conditions.push(condition)
         }
       })
+      if (conditions.length === 0) {
+        conditions.push(objectTypeCondition(varName, type))
+      }
       conditions.push(
         ...propertiesConditions(
           varName,
@@ -237,6 +239,7 @@ function objectCondition(
       )
     }
   } else {
+    conditions.push(objectTypeCondition(varName, type))
     // Get object literal properties...
     try {
       const properties = type.getProperties()
@@ -387,12 +390,7 @@ function propertyConditions(
   project: Project
 ): string | null {
   const varName = `${objName}.${property.getName()}`
-  return typeConditions(
-    varName,
-    property.getType(),
-    addDependency,
-    project
-  )
+  return typeConditions(varName, property.getType(), addDependency, project)
 }
 
 function propertiesConditions(
@@ -413,13 +411,7 @@ function generateTypeGuard(
   addDependency: IAddDependency,
   project: Project
 ): string {
-  const conditions = typeConditions(
-    'obj',
-    type,
-    addDependency,
-    project,
-    false
-  )
+  const conditions = typeConditions('obj', type, addDependency, project, false)
 
   return `
     export function ${functionName}(obj: any): obj is ${typeName} {
