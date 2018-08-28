@@ -282,3 +282,25 @@ testProcessProject(
     }`,
   }
 )
+
+testProcessProject(
+  'generates type guards for an object literal type',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      foo: number
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            typeof obj.foo === "number"
+        )
+    }`,
+  }
+)
