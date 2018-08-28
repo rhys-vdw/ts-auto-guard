@@ -341,8 +341,7 @@ testProcessProject(
             typeof obj.foo === "number"
         )
     }`,
-  },
-  { skip: true }
+  }
 )
 
 testProcessProject(

@@ -3,9 +3,11 @@ import Project, {
   ExportableNode,
   ImportDeclarationStructure,
   JSDoc,
+  JSDocableNode,
   Node,
   PropertySignature,
   SourceFile,
+  SyntaxKind,
   Type,
   TypeGuards,
 } from 'ts-simple-ast'
@@ -185,36 +187,44 @@ function objectCondition(
 ): string | null {
   const conditions: string[] = []
 
-  if (type.isInterface()) {
-    const declarations = type.getSymbol()!.getDeclarations()
-    const docs = flatMap(
-      declarations,
-      d => (TypeGuards.isJSDocableNode(d) ? d.getJsDocs() : [])
+  const declarations = type.getSymbol()!.getDeclarations()
+
+  // TODO: https://github.com/rhys-vdw/ts-auto-guard/issues/29
+  const declaration = declarations[0]
+
+  if (declaration === undefined) {
+    reportError(`Couldn't find declaration for type ${type.getText()}`)
+    return null
+  }
+
+  const docNode: JSDocableNode | null = TypeGuards.isJSDocableNode(declaration)
+    ? declaration
+    : declaration.getParentIfKind(SyntaxKind.TypeAliasDeclaration) || null
+
+  const typeGuardName =
+    docNode === null ? null : getTypeGuardName(docNode.getJsDocs())
+
+  if (useGuard && typeGuardName !== null) {
+    const sourcePath = declaration.getSourceFile()!.getFilePath()
+
+    addDependency(
+      findOrCreate(project, outFilePath(sourcePath)),
+      typeGuardName,
+      false
     )
 
-    // TODO: https://github.com/rhys-vdw/ts-auto-guard/issues/29
-    const declaration = declarations.find(TypeGuards.isInterfaceDeclaration)
-    if (declaration === undefined) {
-      reportError(`Couldn't find declaration for type ${type.getText()}`)
-      return null
-    }
+    // NOTE: Cast to boolean to stop type guard property and prevent compile
+    //       errors.
+    return `${typeGuardName}(${varName}) as boolean`
+  }
 
-    const typeGuardName = getTypeGuardName(docs)
-    if (useGuard && typeGuardName !== null) {
-      const sourcePath = declaration.getSourceFile()!.getFilePath()
-
-      addDependency(
-        findOrCreate(project, outFilePath(sourcePath)),
-        typeGuardName,
-        false
-      )
-
-      // NOTE: Cast to boolean to stop type guard property and prevent compile
-      //       errors.
-      return `${typeGuardName}(${varName}) as boolean`
-    }
-
+  if (type.isInterface()) {
     if (!useGuard || typeGuardName === null) {
+      if (!TypeGuards.isInterfaceDeclaration(declaration)) {
+        throw new TypeError(
+          'Extected declaration to be an interface delcaration!'
+        )
+      }
       declaration.getBaseTypes().forEach(baseType => {
         const condition = typeConditions(
           varName,
