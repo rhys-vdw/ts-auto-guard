@@ -223,7 +223,7 @@ testProcessProject(
 )
 
 testProcessProject(
-  'generates type guards for extended interface',
+  'generates type guards for interface extending other interface',
   {
     'test.ts': `
     interface Bar {
@@ -250,7 +250,7 @@ testProcessProject(
 )
 
 testProcessProject(
-  'generates type guards for extended interface with type guard',
+  'generates type guards for interface extending other interface with type guard',
   {
     'test.ts': `
     /** @see {isBar} ts-auto-guard:type-guard */
@@ -281,6 +281,68 @@ testProcessProject(
         )
     }`,
   }
+)
+
+testProcessProject(
+  'generates type guards for interface extending object type',
+  {
+    'test.ts': `
+    export type Bar = {
+      bar: number
+    }
+
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo extends Bar {
+      foo: number
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            typeof obj.bar === "number" &&
+            typeof obj.foo === "number"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards for interface extending object type with type guard',
+  {
+    'test.ts': `
+    /** @see {isBar} ts-auto-guard:type-guard */
+    export type Bar = {
+      bar: number
+    }
+
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo extends Bar {
+      foo: number
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Bar, Foo } from "./test";
+
+    export function isBar(obj: any): obj is Bar {
+        return (
+            typeof obj === "object" &&
+            typeof obj.bar === "number"
+        )
+    }
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            isBar(obj) as boolean &&
+            typeof obj.foo === "number"
+        )
+    }`,
+  },
+  { skip: true }
 )
 
 testProcessProject(
