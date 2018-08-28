@@ -135,17 +135,13 @@ function typeOf(varName: string, type: string): string {
 function typeUnionConditions(
   varName: string,
   types: Type[],
-  isOptional: boolean,
   addDependency: IAddDependency,
   project: Project
 ): string {
   const conditions: string[] = []
-  if (isOptional && types.findIndex(type => type.isUndefined()) === -1) {
-    conditions.push(typeOf(varName, 'undefined'))
-  }
   conditions.push(
     ...(types
-      .map(type => typeConditions(varName, type, false, addDependency, project))
+      .map(type => typeConditions(varName, type, addDependency, project))
       .filter(v => v !== null) as string[])
   )
   return parens(ors(...conditions))
@@ -167,7 +163,6 @@ function arrayCondition(
   const conditions = typeConditions(
     'e',
     arrayType,
-    false,
     addDependency,
     project
   )
@@ -225,7 +220,6 @@ function objectCondition(
         const condition = typeConditions(
           varName,
           baseType,
-          false,
           addDependency,
           project
         )
@@ -282,7 +276,6 @@ function tupleCondition(
       const condition = typeConditions(
         `${varName}[${i}]`,
         elementType,
-        false,
         addDependency,
         project
       )
@@ -323,7 +316,6 @@ function literalCondition(
 function typeConditions(
   varName: string,
   type: Type,
-  isOptional: boolean,
   addDependency: IAddDependency,
   project: Project,
   useGuard: boolean = true
@@ -349,7 +341,6 @@ function typeConditions(
     return typeUnionConditions(
       varName,
       type.getUnionTypes(),
-      isOptional,
       addDependency,
       project
     )
@@ -358,16 +349,6 @@ function typeConditions(
     return typeUnionConditions(
       varName,
       type.getIntersectionTypes(),
-      isOptional,
-      addDependency,
-      project
-    )
-  }
-  if (isOptional) {
-    return typeUnionConditions(
-      varName,
-      [type],
-      isOptional,
       addDependency,
       project
     )
@@ -409,7 +390,6 @@ function propertyConditions(
   return typeConditions(
     varName,
     property.getType(),
-    property.hasQuestionToken(),
     addDependency,
     project
   )
@@ -436,7 +416,6 @@ function generateTypeGuard(
   const conditions = typeConditions(
     'obj',
     type,
-    false,
     addDependency,
     project,
     false
