@@ -197,6 +197,8 @@ function objectCondition(
     return null
   }
 
+  // JSDoc is attached to the type alias rather than the object literal in the
+  // case of eg. `type Foo = { x: number }`
   const docNode: JSDocableNode | null = TypeGuards.isJSDocableNode(declaration)
     ? declaration
     : declaration.getParentIfKind(SyntaxKind.TypeAliasDeclaration) || null
