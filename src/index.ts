@@ -185,6 +185,7 @@ function objectCondition(
   useGuard: boolean,
   project: Project
 ): string | null {
+  console.log('OBJECT')
   const conditions: string[] = []
 
   const declarations = type.getSymbol()!.getDeclarations()
@@ -335,6 +336,7 @@ function typeConditions(
   project: Project,
   useGuard: boolean = true
 ): string | null {
+  console.log('TYPE', type.getText())
   if (type.isNull()) {
     return eq(varName, 'null')
   }
