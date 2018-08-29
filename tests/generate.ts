@@ -127,6 +127,32 @@ testProcessProject(
 )
 
 testProcessProject(
+  'correctly handles default export',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    interface Foo {
+      foo: number,
+      bar: string
+    }
+
+    export default Foo`,
+  },
+  {
+    'test.guard.ts': `
+    import Foo from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            typeof obj === "object" &&
+            typeof obj.foo === "number" &&
+            typeof obj.bar === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
   'generates type guards for interface with optional field',
   {
     'test.ts': `
