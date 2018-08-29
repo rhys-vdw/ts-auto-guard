@@ -1,5 +1,7 @@
 # ts-auto-guard
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/usabilityhub/ts-auto-guard.svg)](https://greenkeeper.io/)
+
 > Generate type guard functions from TypeScript interfaces
 
 _Very early prototype_
