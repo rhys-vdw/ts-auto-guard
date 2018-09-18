@@ -1,7 +1,8 @@
 import { each, pull } from 'lodash'
 import test from 'tape'
 import Project from 'ts-simple-ast'
-import { processProject } from '../src'
+import { minify, MinifyOptions } from 'uglify-js'
+import { IGenerateOptions, processProject } from '../src'
 
 function createProject(): Project {
   return new Project({
@@ -11,11 +12,18 @@ function createProject(): Project {
   })
 }
 
+interface ITestOptions {
+  skip?: boolean
+  only?: boolean
+  minifyOptions?: MinifyOptions
+  options?: IGenerateOptions
+}
+
 function testProcessProject(
   typeDescription: string,
   input: { readonly [filename: string]: string },
   output: { readonly [filename: string]: string },
-  { skip, only }: { skip?: boolean; only?: boolean } = {}
+  { skip, only, options, minifyOptions }: ITestOptions = {}
 ) {
   const fn = skip ? test.skip : only ? test.only : test
   fn(typeDescription, t => {
@@ -28,7 +36,7 @@ function testProcessProject(
     const expectedFilenames = Object.keys(output)
 
     t.doesNotThrow(() => {
-      processProject(project)
+      processProject(project, options)
     })
 
     for (const sourceFile of project.getSourceFiles()) {
@@ -46,8 +54,21 @@ function testProcessProject(
             `${filePath}.expected`,
             expectedRaw
           )
-          expectedFile.formatText()
-          t.equal(sourceFile.getText(), expectedFile.getText(), filePath)
+          let sourceText: string
+          if (minifyOptions !== undefined) {
+            const emitOutput = sourceFile.getEmitOutput()
+            const result = minify(
+              emitOutput.getOutputFiles()[0].getText(),
+              minifyOptions
+            )
+            t.error(result.error, 'UglifyJS should succeed')
+            sourceText = result.code
+          } else {
+            expectedFile.formatText()
+            sourceText = sourceFile.getText()
+          }
+
+          t.equal(sourceText, expectedFile.getText(), filePath)
         }
       }
     }
@@ -389,5 +410,53 @@ testProcessProject(
             typeof obj.foo === "number"
         )
     }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards with a short circuit',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      foo: number
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any): obj is Foo {
+        return (
+            DEBUG ||
+            typeof obj === "object" &&
+            typeof obj.foo === "number"
+        )
+    }`,
+  },
+  {
+    options: { shortCircuitCondition: 'DEBUG' },
+  }
+)
+
+testProcessProject(
+  'generated type guards with a short circuit are correctly stripped by UglifyJS',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      foo: number,
+      bar: Foo | string | () => void,
+      baz: "foo" | "bar"
+    }`,
+  },
+  {
+    'test.guard.ts': `"use strict";function isFoo(o){return!0}exports.__esModule=!0,exports.isFoo=isFoo;`,
+  },
+  {
+    minifyOptions: {
+      compress: { global_defs: { DEBUG: true } },
+    },
+    options: { shortCircuitCondition: 'DEBUG' },
   }
 )

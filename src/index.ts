@@ -421,14 +421,17 @@ function generateTypeGuard(
   typeName: string,
   type: Type,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  shortCircuitCondition: string | undefined
 ): string {
   const conditions = typeConditions('obj', type, addDependency, project, false)
 
   return `
     export function ${functionName}(obj: any): obj is ${typeName} {
         return (
-            ${conditions}
+            ${
+              shortCircuitCondition ? `${shortCircuitCondition} ||\n` : ''
+            }${conditions}
         )
     }`
 }
@@ -476,17 +479,27 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
   }
 }
 
-export async function generate(paths: ReadonlyArray<string>): Promise<void> {
+export interface IGenerateOptions {
+  shortCircuitCondition?: string
+}
+
+export async function generate(
+  paths: ReadonlyArray<string>,
+  options: Readonly<IGenerateOptions>
+): Promise<void> {
   const project = new Project({
     addFilesFromTsConfig: paths.length === 0,
     tsConfigFilePath: './tsconfig.json',
   })
   project.addExistingSourceFiles(paths as string[])
-  processProject(project)
+  processProject(project, options)
   return project.save()
 }
 
-export function processProject(project: Project) {
+export function processProject(
+  project: Project,
+  options: Readonly<IGenerateOptions> = {}
+) {
   // Delete previously generated guard.
   project
     .getSourceFiles('./**/*.guard.ts')
@@ -526,7 +539,8 @@ export function processProject(project: Project) {
                 child.getName(),
                 child.getType(),
                 addDependency,
-                project
+                project,
+                options.shortCircuitCondition
               )
             )
             const exportName = child.getName()

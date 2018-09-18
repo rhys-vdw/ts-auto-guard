@@ -26,10 +26,12 @@
   "devDependencies": {
     "@types/node": "^10.7.0",
     "@types/tape": "^4.2.32",
+    "@types/uglify-js": "^3.0.3",
     "onchange": "^4.1.0",
     "prettier": "^1.14.2",
     "tap-diff": "^0.1.1",
     "tape": "^4.9.1",
-    "ts-node": "^7.0.1"
+    "ts-node": "^7.0.1",
+    "uglify-js": "^3.4.9"
   }
 }
