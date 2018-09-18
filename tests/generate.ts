@@ -1,5 +1,5 @@
 import { each, pull } from 'lodash'
-import test from 'tape' // tslint:disable-line:no-implicit-dependencies
+import test from 'tape'
 import Project from 'ts-simple-ast'
 import { processProject } from '../src'
 
