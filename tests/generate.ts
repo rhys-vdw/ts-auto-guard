@@ -2,7 +2,7 @@ import { each, pull } from 'lodash'
 import test from 'tape'
 import Project from 'ts-simple-ast'
 import { minify, MinifyOptions } from 'uglify-js'
-import { IGenerateOptions, processProject } from '../src'
+import { IProcessOptions, processProject } from '../src'
 
 function createProject(): Project {
   return new Project({
@@ -16,7 +16,7 @@ interface ITestOptions {
   skip?: boolean
   only?: boolean
   minifyOptions?: MinifyOptions
-  options?: IGenerateOptions
+  options?: IProcessOptions
 }
 
 function testProcessProject(

@@ -479,26 +479,33 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
   }
 }
 
-export interface IGenerateOptions {
+export interface IProcessOptions {
   shortCircuitCondition?: string
 }
 
-export async function generate(
-  paths: ReadonlyArray<string>,
-  options: Readonly<IGenerateOptions>
-): Promise<void> {
+export interface IGenerateOptions {
+  paths?: ReadonlyArray<string>
+  project: string
+  processOptions: Readonly<IProcessOptions>
+}
+
+export async function generate({
+  paths = [],
+  project: tsConfigFilePath,
+  processOptions,
+}: Readonly<IGenerateOptions>): Promise<void> {
   const project = new Project({
     addFilesFromTsConfig: paths.length === 0,
-    tsConfigFilePath: './tsconfig.json',
+    tsConfigFilePath,
   })
-  project.addExistingSourceFiles(paths as string[])
-  processProject(project, options)
+  project.addExistingSourceFiles(paths)
+  processProject(project, processOptions)
   return project.save()
 }
 
 export function processProject(
   project: Project,
-  options: Readonly<IGenerateOptions> = {}
+  options: Readonly<IProcessOptions> = {}
 ) {
   // Delete previously generated guard.
   project
