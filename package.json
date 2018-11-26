@@ -4,9 +4,10 @@
   "description": "Generate type guard functions from TypeScript interfaces",
   "main": "lib/index.js",
   "scripts": {
-    "test": "NODE_ENV=test && tape -r ts-node/register tests/**/*.ts | tap-diff",
+    "test": "NODE_ENV=test && yarn run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc && chmod 775 lib/cli.js",
-    "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts"
+    "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts",
+    "format:check": "prettier --list-different src/**/*.ts"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
