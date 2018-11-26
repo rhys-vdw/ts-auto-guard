@@ -6,8 +6,7 @@
   "scripts": {
     "test": "NODE_ENV=test && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc && chmod 775 lib/cli.js",
-    "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts",
-    "format-watch": "onchange src/**/*.ts tests/**/*.ts -- yarn run format {{changed}}"
+    "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
@@ -29,7 +28,6 @@
     "@types/node": "^10.7.0",
     "@types/tape": "^4.2.32",
     "@types/uglify-js": "^3.0.3",
-    "onchange": "^5.0.0",
     "prettier": "^1.14.2",
     "tap-diff": "^0.1.1",
     "tape": "^4.9.1",
