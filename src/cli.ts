@@ -8,13 +8,19 @@ import { FileNotFoundError } from 'ts-simple-ast'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 
-const options = defaults(
+interface ICliOptions {
+  shortcircuit: string | undefined
+  paths: ReadonlyArray<string>
+  project: string | undefined
+}
+
+const options: ICliOptions = defaults(
   commandLineArgs([
     { name: 'shortcircuit', type: String },
     { name: 'paths', type: String, multiple: true, defaultOption: true },
     { name: 'project', type: String },
-  ]),
-  { paths: [] }
+  ]) as ICliOptions,
+  { paths: [] as ReadonlyArray<string> }
 )
 
 async function run() {
