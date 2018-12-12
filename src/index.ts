@@ -170,7 +170,7 @@ function arrayCondition(
   }
   return ands(
     `Array.isArray(${varName})`,
-    `${varName}.every(e =>\n${conditions}\n)`
+    `${varName}.every((e: any) =>\n${conditions}\n)`
   )
 }
 
