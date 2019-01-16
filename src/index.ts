@@ -402,7 +402,15 @@ function propertyConditions(
   project: Project
 ): string | null {
   const varName = `${objName}.${property.getName()}`
-  return typeConditions(varName, property.getType(), addDependency, project)
+  return `(${typeConditions(
+    varName,
+    property.getType(),
+    addDependency,
+    project
+  )} || (function() { console.error("${varName} type mismatch, expected ${property
+    .getType()
+    .getText()
+    .replace(/"/g, '\\"')}", ${varName}); return false })())`
 }
 
 function propertiesConditions(
