@@ -414,15 +414,19 @@ function propertyConditions(
   const propertyName = property === undefined ? '(???)' : property.getName()
 
   const varName = `${objName}.${propertyName}`
-  return `(${typeConditions(
+  const expectedType = property.getType().getText()
+  const conditions = typeConditions(
     varName,
     property.getType(),
     addDependency,
     project
-  )} || (function() { console.error("${varName} type mismatch, expected ${property
-    .getType()
-    .getText()
-    .replace(/"/g, '\\"')}", ${varName}); return false })())`
+  )
+  return (
+    conditions &&
+    `evaluate(${conditions}, ${JSON.stringify(varName)}, ${JSON.stringify(
+      expectedType
+    )})`
+  )
 }
 
 function propertiesConditions(
@@ -448,6 +452,16 @@ function generateTypeGuard(
 
   return `
     export function ${functionName}(obj: any): obj is ${typeName} {
+        const evaluate = (
+          isCorrect: boolean,
+          varName: string,
+          expected: string
+        ): boolean => {
+          if (!isCorrect) {
+            console.error(\`\${varName} type mismatch, expected: \${expected}\`)
+          }
+          return isCorrect
+        }
         return (
             ${
               shortCircuitCondition ? `${shortCircuitCondition} ||\n` : ''
