@@ -187,7 +187,16 @@ function objectCondition(
 ): string | null {
   const conditions: string[] = []
 
-  const declarations = type.getSymbol()!.getDeclarations()
+  const symbol = type.getSymbol()
+  if (symbol === undefined) {
+    // I think this is happening when the type is declare in a node module.
+
+    // tslint:disable-next-line:no-console
+    console.error(`Unable to get symbol for type ${type.getText()}`)
+    return typeOf(varName, 'object')
+  }
+
+  const declarations = symbol.getDeclarations()
 
   // TODO: https://github.com/rhys-vdw/ts-auto-guard/issues/29
   const declaration = declarations[0]
@@ -401,7 +410,10 @@ function propertyConditions(
   addDependency: IAddDependency,
   project: Project
 ): string | null {
-  const varName = `${objName}.${property.getName()}`
+  // working around a bug in ts-simple-ast
+  const propertyName = property === undefined ? '(???)' : property.getName()
+
+  const varName = `${objName}.${propertyName}`
   return `(${typeConditions(
     varName,
     property.getType(),
