@@ -241,6 +241,11 @@ function objectCondition(
   const typeGuardName =
     docNode === null ? null : getTypeGuardName(docNode.getJsDocs())
 
+  if (typeGuardName !== null) {
+    console.log('TYPE GUARD NAME: ' + typeGuardName, useGuard)
+    console.log(new TypeError().stack)
+  }
+
   if (useGuard && typeGuardName !== null) {
     const sourcePath = declaration.getSourceFile()!.getFilePath()
 
