@@ -186,6 +186,9 @@ function arrayCondition(
     // TODO: Or `null`???
     return 'true'
   }
+
+  // Bit of a hack, just check if the second argument is used before actually
+  // creating it. This avoids unused parameter errors.
   const secondArg = conditions.includes(elementPath)
     ? `, ${indexIdentifier}: number`
     : ''
