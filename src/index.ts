@@ -1,4 +1,4 @@
-import { flatMap } from 'lodash'
+import { flatMap, lowerFirst } from 'lodash'
 import Project, {
   ExportableNode,
   ImportDeclarationStructure,
@@ -138,12 +138,13 @@ function typeUnionConditions(
   varName: string,
   types: Type[],
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string
 ): string {
   const conditions: string[] = []
   conditions.push(
     ...(types
-      .map(type => typeConditions(varName, type, addDependency, project))
+      .map(type => typeConditions(varName, type, addDependency, project, path))
       .filter(v => v !== null) as string[])
   )
   return parens(ors(...conditions))
@@ -157,12 +158,19 @@ function arrayCondition(
   varName: string,
   arrayType: Type,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string
 ): string {
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
   }
-  const conditions = typeConditions('e', arrayType, addDependency, project)
+  const conditions = typeConditions(
+    'e',
+    arrayType,
+    addDependency,
+    project,
+    `${path}[i]` // TODO: Actually interpolate the `i` here.
+  )
   if (conditions === null) {
     reportError(
       `No conditions for ${varName}, with array type ${arrayType.getText()}`
@@ -183,7 +191,8 @@ function objectCondition(
   type: Type,
   addDependency: IAddDependency,
   useGuard: boolean,
-  project: Project
+  project: Project,
+  path: string
 ): string | null {
   const conditions: string[] = []
 
@@ -241,7 +250,8 @@ function objectCondition(
           varName,
           baseType,
           addDependency,
-          project
+          project,
+          path
         )
         if (condition !== null) {
           conditions.push(condition)
@@ -255,7 +265,8 @@ function objectCondition(
           varName,
           declaration.getProperties(),
           addDependency,
-          project
+          project,
+          path
         )
       )
     }
@@ -272,7 +283,8 @@ function objectCondition(
           varName,
           propertySignatures,
           addDependency,
-          project
+          project,
+          path
         )
       )
     } catch (error) {
@@ -292,7 +304,8 @@ function tupleCondition(
   varName: string,
   type: Type,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string
 ): string {
   const types = type.getTupleElements()
   const conditions = types.reduce(
@@ -301,7 +314,8 @@ function tupleCondition(
         `${varName}[${i}]`,
         elementType,
         addDependency,
-        project
+        project,
+        path
       )
       if (condition !== null) {
         acc.push(condition)
@@ -342,6 +356,7 @@ function typeConditions(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
+  path: string,
   useGuard: boolean = true
 ): string | null {
   if (type.isNull()) {
@@ -366,7 +381,8 @@ function typeConditions(
       varName,
       type.getUnionTypes(),
       addDependency,
-      project
+      project,
+      path
     )
   }
   if (type.isIntersection()) {
@@ -374,18 +390,26 @@ function typeConditions(
       varName,
       type.getIntersectionTypes(),
       addDependency,
-      project
+      project,
+      path
     )
   }
   if (type.isArray()) {
-    return arrayCondition(varName, type.getArrayType()!, addDependency, project)
+    return arrayCondition(
+      varName,
+      type.getArrayType()!,
+      addDependency,
+      project,
+      path
+    )
   }
   if (isReadonlyArrayType(type)) {
     return arrayCondition(
       varName,
       getReadonlyArrayType(type)!,
       addDependency,
-      project
+      project,
+      path
     )
   }
   if (isClassType(type)) {
@@ -393,10 +417,17 @@ function typeConditions(
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
   if (type.isObject()) {
-    return objectCondition(varName, type, addDependency, useGuard, project)
+    return objectCondition(
+      varName,
+      type,
+      addDependency,
+      useGuard,
+      project,
+      path
+    )
   }
   if (type.isTuple()) {
-    return tupleCondition(varName, type, addDependency, project)
+    return tupleCondition(varName, type, addDependency, project, path)
   }
   if (type.isLiteral()) {
     return literalCondition(varName, type, addDependency)
@@ -408,22 +439,25 @@ function propertyConditions(
   objName: string,
   property: PropertySignature,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string
 ): string | null {
   // working around a bug in ts-simple-ast
   const propertyName = property === undefined ? '(???)' : property.getName()
 
   const varName = `${objName}.${propertyName}`
+  const propertyPath = `${path}.${propertyName}`
   const expectedType = property.getType().getText()
   const conditions = typeConditions(
     varName,
     property.getType(),
     addDependency,
-    project
+    project,
+    propertyPath
   )
   return (
     conditions &&
-    `evaluate(${conditions}, ${JSON.stringify(varName)}, ${JSON.stringify(
+    `evaluate(${conditions}, ${JSON.stringify(propertyPath)}, ${JSON.stringify(
       expectedType
     )})`
   )
@@ -433,10 +467,13 @@ function propertiesConditions(
   varName: string,
   properties: ReadonlyArray<PropertySignature>,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string
 ): string[] {
   return properties
-    .map(prop => propertyConditions(varName, prop, addDependency, project))
+    .map(prop =>
+      propertyConditions(varName, prop, addDependency, project, path)
+    )
     .filter(v => v !== null) as string[]
 }
 
@@ -448,7 +485,14 @@ function generateTypeGuard(
   project: Project,
   shortCircuitCondition: string | undefined
 ): string {
-  const conditions = typeConditions('obj', type, addDependency, project, false)
+  const conditions = typeConditions(
+    'obj',
+    type,
+    addDependency,
+    project,
+    lowerFirst(typeName),
+    false
+  )
 
   return `
     export function ${functionName}(obj: any): obj is ${typeName} {
