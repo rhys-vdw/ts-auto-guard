@@ -139,12 +139,15 @@ function typeUnionConditions(
   types: Type[],
   addDependency: IAddDependency,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string {
   const conditions: string[] = []
   conditions.push(
     ...(types
-      .map(type => typeConditions(varName, type, addDependency, project, path))
+      .map(type =>
+        typeConditions(varName, type, addDependency, project, path, arrayDepth)
+      )
       .filter(v => v !== null) as string[])
   )
   return parens(ors(...conditions))
@@ -159,26 +162,36 @@ function arrayCondition(
   arrayType: Type,
   addDependency: IAddDependency,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string {
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
   }
+  const indexIdentifier = `i${arrayDepth}`
+  const elementPath = `${path}[\${${indexIdentifier}}]`
   const conditions = typeConditions(
     'e',
     arrayType,
     addDependency,
     project,
-    `${path}[i]` // TODO: Actually interpolate the `i` here.
+    elementPath,
+    arrayDepth + 1
   )
+
   if (conditions === null) {
     reportError(
       `No conditions for ${varName}, with array type ${arrayType.getText()}`
     )
+    // TODO: Or `null`???
+    return 'true'
   }
+  const secondArg = conditions.includes(elementPath)
+    ? `, ${indexIdentifier}: number`
+    : ''
   return ands(
     `Array.isArray(${varName})`,
-    `${varName}.every((e: any) =>\n${conditions}\n)`
+    `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
   )
 }
 
@@ -192,7 +205,8 @@ function objectCondition(
   addDependency: IAddDependency,
   useGuard: boolean,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string | null {
   const conditions: string[] = []
 
@@ -251,7 +265,8 @@ function objectCondition(
           baseType,
           addDependency,
           project,
-          path
+          path,
+          arrayDepth
         )
         if (condition !== null) {
           conditions.push(condition)
@@ -266,7 +281,8 @@ function objectCondition(
           declaration.getProperties(),
           addDependency,
           project,
-          path
+          path,
+          arrayDepth
         )
       )
     }
@@ -284,7 +300,8 @@ function objectCondition(
           propertySignatures,
           addDependency,
           project,
-          path
+          path,
+          arrayDepth
         )
       )
     } catch (error) {
@@ -305,7 +322,8 @@ function tupleCondition(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string {
   const types = type.getTupleElements()
   const conditions = types.reduce(
@@ -315,7 +333,8 @@ function tupleCondition(
         elementType,
         addDependency,
         project,
-        path
+        path,
+        arrayDepth
       )
       if (condition !== null) {
         acc.push(condition)
@@ -357,6 +376,7 @@ function typeConditions(
   addDependency: IAddDependency,
   project: Project,
   path: string,
+  arrayDepth: number,
   useGuard: boolean = true
 ): string | null {
   if (type.isNull()) {
@@ -382,7 +402,8 @@ function typeConditions(
       type.getUnionTypes(),
       addDependency,
       project,
-      path
+      path,
+      arrayDepth
     )
   }
   if (type.isIntersection()) {
@@ -391,7 +412,8 @@ function typeConditions(
       type.getIntersectionTypes(),
       addDependency,
       project,
-      path
+      path,
+      arrayDepth
     )
   }
   if (type.isArray()) {
@@ -400,7 +422,8 @@ function typeConditions(
       type.getArrayType()!,
       addDependency,
       project,
-      path
+      path,
+      arrayDepth
     )
   }
   if (isReadonlyArrayType(type)) {
@@ -409,7 +432,8 @@ function typeConditions(
       getReadonlyArrayType(type)!,
       addDependency,
       project,
-      path
+      path,
+      arrayDepth
     )
   }
   if (isClassType(type)) {
@@ -423,11 +447,19 @@ function typeConditions(
       addDependency,
       useGuard,
       project,
-      path
+      path,
+      arrayDepth
     )
   }
   if (type.isTuple()) {
-    return tupleCondition(varName, type, addDependency, project, path)
+    return tupleCondition(
+      varName,
+      type,
+      addDependency,
+      project,
+      path,
+      arrayDepth
+    )
   }
   if (type.isLiteral()) {
     return literalCondition(varName, type, addDependency)
@@ -440,7 +472,8 @@ function propertyConditions(
   property: PropertySignature,
   addDependency: IAddDependency,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string | null {
   // working around a bug in ts-simple-ast
   const propertyName = property === undefined ? '(???)' : property.getName()
@@ -453,11 +486,12 @@ function propertyConditions(
     property.getType(),
     addDependency,
     project,
-    propertyPath
+    propertyPath,
+    arrayDepth
   )
   return (
     conditions &&
-    `evaluate(${conditions}, ${JSON.stringify(propertyPath)}, ${JSON.stringify(
+    `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
       expectedType
     )})`
   )
@@ -468,11 +502,19 @@ function propertiesConditions(
   properties: ReadonlyArray<PropertySignature>,
   addDependency: IAddDependency,
   project: Project,
-  path: string
+  path: string,
+  arrayDepth: number
 ): string[] {
   return properties
     .map(prop =>
-      propertyConditions(varName, prop, addDependency, project, path)
+      propertyConditions(
+        varName,
+        prop,
+        addDependency,
+        project,
+        path,
+        arrayDepth
+      )
     )
     .filter(v => v !== null) as string[]
 }
@@ -485,17 +527,24 @@ function generateTypeGuard(
   project: Project,
   shortCircuitCondition: string | undefined
 ): string {
+  const defaultArgumentName = lowerFirst(typeName)
   const conditions = typeConditions(
     'obj',
     type,
     addDependency,
     project,
-    lowerFirst(typeName),
+    '${argumentName}', // tslint:disable-line:no-invalid-template-strings
+    0,
     false
   )
 
   return `
-    export function ${functionName}(obj: any): obj is ${typeName} {
+    export function ${functionName}(obj: any, argumentName: string = "${defaultArgumentName}"): obj is ${typeName} {
+        ${
+          shortCircuitCondition
+            ? `if (${shortCircuitCondition}) return true\n`
+            : ''
+        }
         const evaluate = (
           isCorrect: boolean,
           varName: string,
@@ -507,9 +556,7 @@ function generateTypeGuard(
           return isCorrect
         }
         return (
-            ${
-              shortCircuitCondition ? `${shortCircuitCondition} ||\n` : ''
-            }${conditions}
+          ${conditions}
         )
     }`
 }
