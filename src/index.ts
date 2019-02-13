@@ -528,7 +528,7 @@ function propertyConditions(
       conditions &&
       `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
         expectedType
-      )})`
+      )}, ${varName})`
     )
   }
   return conditions
@@ -590,10 +590,11 @@ function generateTypeGuard(
     ? `const evaluate = (
       isCorrect: boolean,
       varName: string,
-      expected: string
+      expected: string,
+      actual: any
     ): boolean => {
       if (!isCorrect) {
-        console.error(\`\${varName} type mismatch, expected: \${expected}\`)
+        console.error(\`\${varName} type mismatch, expected: \${expected}\`, actual)
       }
       return isCorrect
     }\n`
