@@ -140,13 +140,23 @@ function typeUnionConditions(
   addDependency: IAddDependency,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string {
   const conditions: string[] = []
   conditions.push(
     ...(types
       .map(type =>
-        typeConditions(varName, type, addDependency, project, path, arrayDepth)
+        typeConditions(
+          varName,
+          type,
+          addDependency,
+          project,
+          path,
+          arrayDepth,
+          true,
+          debug
+        )
       )
       .filter(v => v !== null) as string[])
   )
@@ -163,7 +173,8 @@ function arrayCondition(
   addDependency: IAddDependency,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string {
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
@@ -176,7 +187,9 @@ function arrayCondition(
     addDependency,
     project,
     elementPath,
-    arrayDepth + 1
+    arrayDepth + 1,
+    true,
+    debug
   )
 
   if (conditions === null) {
@@ -209,7 +222,8 @@ function objectCondition(
   useGuard: boolean,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string | null {
   const conditions: string[] = []
 
@@ -241,11 +255,6 @@ function objectCondition(
   const typeGuardName =
     docNode === null ? null : getTypeGuardName(docNode.getJsDocs())
 
-  if (typeGuardName !== null) {
-    console.log('TYPE GUARD NAME: ' + typeGuardName, useGuard)
-    console.log(new TypeError().stack)
-  }
-
   if (useGuard && typeGuardName !== null) {
     const sourcePath = declaration.getSourceFile()!.getFilePath()
 
@@ -274,7 +283,9 @@ function objectCondition(
           addDependency,
           project,
           path,
-          arrayDepth
+          arrayDepth,
+          true,
+          debug
         )
         if (condition !== null) {
           conditions.push(condition)
@@ -290,7 +301,8 @@ function objectCondition(
           addDependency,
           project,
           path,
-          arrayDepth
+          arrayDepth,
+          debug
         )
       )
     }
@@ -309,7 +321,8 @@ function objectCondition(
           addDependency,
           project,
           path,
-          arrayDepth
+          arrayDepth,
+          debug
         )
       )
     } catch (error) {
@@ -331,7 +344,8 @@ function tupleCondition(
   addDependency: IAddDependency,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string {
   const types = type.getTupleElements()
   const conditions = types.reduce(
@@ -342,7 +356,9 @@ function tupleCondition(
         addDependency,
         project,
         path,
-        arrayDepth
+        arrayDepth,
+        true,
+        debug
       )
       if (condition !== null) {
         acc.push(condition)
@@ -385,7 +401,8 @@ function typeConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  useGuard: boolean = true
+  useGuard: boolean,
+  debug: boolean
 ): string | null {
   if (type.isNull()) {
     return eq(varName, 'null')
@@ -411,7 +428,8 @@ function typeConditions(
       addDependency,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (type.isIntersection()) {
@@ -421,7 +439,8 @@ function typeConditions(
       addDependency,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (type.isArray()) {
@@ -431,7 +450,8 @@ function typeConditions(
       addDependency,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (isReadonlyArrayType(type)) {
@@ -441,7 +461,8 @@ function typeConditions(
       addDependency,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (isClassType(type)) {
@@ -456,7 +477,8 @@ function typeConditions(
       useGuard,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (type.isTuple()) {
@@ -466,7 +488,8 @@ function typeConditions(
       addDependency,
       project,
       path,
-      arrayDepth
+      arrayDepth,
+      debug
     )
   }
   if (type.isLiteral()) {
@@ -481,7 +504,8 @@ function propertyConditions(
   addDependency: IAddDependency,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string | null {
   // working around a bug in ts-simple-ast
   const propertyName = property === undefined ? '(???)' : property.getName()
@@ -495,14 +519,19 @@ function propertyConditions(
     addDependency,
     project,
     propertyPath,
-    arrayDepth
+    arrayDepth,
+    true,
+    debug
   )
-  return (
-    conditions &&
-    `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
-      expectedType
-    )})`
-  )
+  if (debug) {
+    return (
+      conditions &&
+      `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
+        expectedType
+      )})`
+    )
+  }
+  return conditions
 }
 
 function propertiesConditions(
@@ -511,7 +540,8 @@ function propertiesConditions(
   addDependency: IAddDependency,
   project: Project,
   path: string,
-  arrayDepth: number
+  arrayDepth: number,
+  debug: boolean
 ): string[] {
   return properties
     .map(prop =>
@@ -521,7 +551,8 @@ function propertiesConditions(
         addDependency,
         project,
         path,
-        arrayDepth
+        arrayDepth,
+        debug
       )
     )
     .filter(v => v !== null) as string[]
@@ -533,7 +564,8 @@ function generateTypeGuard(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
-  shortCircuitCondition: string | undefined
+  shortCircuitCondition: string | undefined,
+  debug: boolean
 ): string {
   const defaultArgumentName = lowerFirst(typeName)
   const conditions = typeConditions(
@@ -543,30 +575,36 @@ function generateTypeGuard(
     project,
     '${argumentName}', // tslint:disable-line:no-invalid-template-strings
     0,
-    false
+    false,
+    debug
   )
 
-  return `
-    export function ${functionName}(obj: any, argumentName: string = "${defaultArgumentName}"): obj is ${typeName} {
-        ${
-          shortCircuitCondition
-            ? `if (${shortCircuitCondition}) return true\n`
-            : ''
-        }
-        const evaluate = (
-          isCorrect: boolean,
-          varName: string,
-          expected: string
-        ): boolean => {
-          if (!isCorrect) {
-            console.error(\`\${varName} type mismatch, expected: \${expected}\`)
-          }
-          return isCorrect
-        }
-        return (
-          ${conditions}
-        )
-    }`
+  const secondArgument = debug
+    ? `argumentName: string = "${defaultArgumentName}"`
+    : `_argumentName?: string`
+  const signature = `export function ${functionName}(obj: any, ${secondArgument}): obj is ${typeName} {\n`
+  const shortCircuit = shortCircuitCondition
+    ? `if (${shortCircuitCondition}) return true\n`
+    : ''
+  const evaluate = debug
+    ? `const evaluate = (
+      isCorrect: boolean,
+      varName: string,
+      expected: string
+    ): boolean => {
+      if (!isCorrect) {
+        console.error(\`\${varName} type mismatch, expected: \${expected}\`)
+      }
+      return isCorrect
+    }\n`
+    : ''
+
+  return [
+    signature,
+    shortCircuit,
+    evaluate,
+    `return (\n${conditions}\n)\n}\n`,
+  ].join('')
 }
 
 // -- Process project --
@@ -614,6 +652,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 
 export interface IProcessOptions {
   shortCircuitCondition?: string
+  debug: boolean
 }
 
 export interface IGenerateOptions {
@@ -638,7 +677,7 @@ export async function generate({
 
 export function processProject(
   project: Project,
-  options: Readonly<IProcessOptions> = {}
+  options: Readonly<IProcessOptions> = { debug: false }
 ) {
   // Delete previously generated guard.
   project
@@ -680,7 +719,8 @@ export function processProject(
                 child.getType(),
                 addDependency,
                 project,
-                options.shortCircuitCondition
+                options.shortCircuitCondition,
+                options.debug
               )
             )
             const exportName = child.getName()

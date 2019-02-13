@@ -14,12 +14,13 @@ interface ICliOptions {
   paths: ReadonlyArray<string>
   project: string | undefined
   help: boolean
+  debug: boolean
 }
 
 const optionList = [
   {
     description:
-      'A JavaScript condition used to automatically return `true` from guard functions, bypassing checks. eg. `process.env.DEBUG === "production"`',
+      'A JavaScript condition used to automatically return `true` from guard functions, bypassing checks. eg. `process.env.DEBUG === "production"`.',
     name: 'shortcircuit',
     type: String,
     typeLabel: '{underline javascript}',
@@ -34,18 +35,25 @@ const optionList = [
     typeLabel: '{underline file[]} ...',
   },
   {
-    description: 'Path to tsconfig.json',
+    description: 'Path to `tsconfig.json`.',
     name: 'project',
     type: String,
     typeLabel: '{underline file}',
   },
   {
     alias: 'h',
-    description: 'Print this usage guide',
+    description: 'Print this usage guide.',
     name: 'help',
     type: Boolean,
   },
+  {
+    alias: 'd',
+    description: 'Include debug logs in generated type guards.',
+    name: 'debug',
+    type: Boolean,
+  },
 ]
+
 const options: ICliOptions = defaults(
   commandLineArgs(optionList) as ICliOptions,
   { paths: [] as ReadonlyArray<string>, help: false }
@@ -61,6 +69,7 @@ async function run() {
     await generate({
       paths: options.paths,
       processOptions: {
+        debug: options.debug,
         shortCircuitCondition: options.shortcircuit,
       },
       project,
