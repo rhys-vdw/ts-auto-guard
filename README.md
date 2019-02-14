@@ -4,8 +4,6 @@
 
 > Generate type guard functions from TypeScript interfaces
 
-_**Early prototype** - this project is not very well tested and is not feature complete_
-
 A tool for automatically generating TypeScript [type guards](https://www.typescriptlang.org/docs/handbook/advanced-types.html#type-guards-and-differentiating-types) for interfaces in your code base.
 
 This tool aims to allow developers to verify data from untyped sources to ensure it conforms to TypeScript types. For example when initializing a data store or receiving structured data in an AJAX response.
