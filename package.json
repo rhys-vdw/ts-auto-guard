@@ -1,11 +1,12 @@
 {
   "name": "ts-auto-guard",
-  "version": "0.0.0",
+  "version": "1.0.0-alpha.1",
   "description": "Generate type guard functions from TypeScript interfaces",
   "main": "lib/index.js",
   "scripts": {
     "test": "NODE_ENV=test && yarn run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc && chmod 775 lib/cli.js",
+    "prepublishOnly": "npm run build",
     "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts",
     "format:check": "prettier --list-different src/**/*.ts"
   },
