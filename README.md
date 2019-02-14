@@ -79,9 +79,22 @@ if (isPerson(person)) {
 }
 ```
 
+## Debug mode
+
+Use debug mode to help work out why your type guards are failing in development. This will change the output type guards to log the path, expected type and value of failing guards.
+
+```
+$ ts-auto-guard --debug
+```
+
+```ts
+isPerson({ name: 20, age: 20 })
+// stderr: "person.name type mismatch, expected: string, found: 20"
+```
+
 ## Short circuiting
 
-`ts-auto-guard` also supports a `shortcircuit` flag that will cause all guards
+ts-auto-guard also supports a `shortcircuit` flag that will cause all guards
 to always return `true`.
 
 ```

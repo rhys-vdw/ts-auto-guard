@@ -1,4 +1,4 @@
-import { flatMap } from 'lodash'
+import { flatMap, lowerFirst } from 'lodash'
 import Project, {
   ExportableNode,
   ImportDeclarationStructure,
@@ -138,12 +138,26 @@ function typeUnionConditions(
   varName: string,
   types: Type[],
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string {
   const conditions: string[] = []
   conditions.push(
     ...(types
-      .map(type => typeConditions(varName, type, addDependency, project))
+      .map(type =>
+        typeConditions(
+          varName,
+          type,
+          addDependency,
+          project,
+          path,
+          arrayDepth,
+          true,
+          debug
+        )
+      )
       .filter(v => v !== null) as string[])
   )
   return parens(ors(...conditions))
@@ -157,20 +171,43 @@ function arrayCondition(
   varName: string,
   arrayType: Type,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string {
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
   }
-  const conditions = typeConditions('e', arrayType, addDependency, project)
+  const indexIdentifier = `i${arrayDepth}`
+  const elementPath = `${path}[\${${indexIdentifier}}]`
+  const conditions = typeConditions(
+    'e',
+    arrayType,
+    addDependency,
+    project,
+    elementPath,
+    arrayDepth + 1,
+    true,
+    debug
+  )
+
   if (conditions === null) {
     reportError(
       `No conditions for ${varName}, with array type ${arrayType.getText()}`
     )
+    // TODO: Or `null`???
+    return 'true'
   }
+
+  // Bit of a hack, just check if the second argument is used before actually
+  // creating it. This avoids unused parameter errors.
+  const secondArg = conditions.includes(elementPath)
+    ? `, ${indexIdentifier}: number`
+    : ''
   return ands(
     `Array.isArray(${varName})`,
-    `${varName}.every((e: any) =>\n${conditions}\n)`
+    `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
   )
 }
 
@@ -183,11 +220,23 @@ function objectCondition(
   type: Type,
   addDependency: IAddDependency,
   useGuard: boolean,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string | null {
   const conditions: string[] = []
 
-  const declarations = type.getSymbol()!.getDeclarations()
+  const symbol = type.getSymbol()
+  if (symbol === undefined) {
+    // I think this is happening when the type is declare in a node module.
+
+    // tslint:disable-next-line:no-console
+    console.error(`Unable to get symbol for type ${type.getText()}`)
+    return typeOf(varName, 'object')
+  }
+
+  const declarations = symbol.getDeclarations()
 
   // TODO: https://github.com/rhys-vdw/ts-auto-guard/issues/29
   const declaration = declarations[0]
@@ -232,7 +281,11 @@ function objectCondition(
           varName,
           baseType,
           addDependency,
-          project
+          project,
+          path,
+          arrayDepth,
+          true,
+          debug
         )
         if (condition !== null) {
           conditions.push(condition)
@@ -246,7 +299,10 @@ function objectCondition(
           varName,
           declaration.getProperties(),
           addDependency,
-          project
+          project,
+          path,
+          arrayDepth,
+          debug
         )
       )
     }
@@ -263,16 +319,16 @@ function objectCondition(
           varName,
           propertySignatures,
           addDependency,
-          project
+          project,
+          path,
+          arrayDepth,
+          debug
         )
       )
     } catch (error) {
       if (error instanceof TypeError) {
         // see https://github.com/dsherret/ts-simple-ast/issues/397
-        reportError(
-          `ERROR: Internal ts-simple-ast error for ${type.getText()}`,
-          error
-        )
+        reportError(`Internal ts-simple-ast error for ${type.getText()}`, error)
       }
     }
   }
@@ -283,7 +339,10 @@ function tupleCondition(
   varName: string,
   type: Type,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string {
   const types = type.getTupleElements()
   const conditions = types.reduce(
@@ -292,7 +351,11 @@ function tupleCondition(
         `${varName}[${i}]`,
         elementType,
         addDependency,
-        project
+        project,
+        path,
+        arrayDepth,
+        true,
+        debug
       )
       if (condition !== null) {
         acc.push(condition)
@@ -333,7 +396,10 @@ function typeConditions(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
-  useGuard: boolean = true
+  path: string,
+  arrayDepth: number,
+  useGuard: boolean,
+  debug: boolean
 ): string | null {
   if (type.isNull()) {
     return eq(varName, 'null')
@@ -357,7 +423,10 @@ function typeConditions(
       varName,
       type.getUnionTypes(),
       addDependency,
-      project
+      project,
+      path,
+      arrayDepth,
+      debug
     )
   }
   if (type.isIntersection()) {
@@ -365,18 +434,32 @@ function typeConditions(
       varName,
       type.getIntersectionTypes(),
       addDependency,
-      project
+      project,
+      path,
+      arrayDepth,
+      debug
     )
   }
   if (type.isArray()) {
-    return arrayCondition(varName, type.getArrayType()!, addDependency, project)
+    return arrayCondition(
+      varName,
+      type.getArrayType()!,
+      addDependency,
+      project,
+      path,
+      arrayDepth,
+      debug
+    )
   }
   if (isReadonlyArrayType(type)) {
     return arrayCondition(
       varName,
       getReadonlyArrayType(type)!,
       addDependency,
-      project
+      project,
+      path,
+      arrayDepth,
+      debug
     )
   }
   if (isClassType(type)) {
@@ -384,10 +467,27 @@ function typeConditions(
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
   if (type.isObject()) {
-    return objectCondition(varName, type, addDependency, useGuard, project)
+    return objectCondition(
+      varName,
+      type,
+      addDependency,
+      useGuard,
+      project,
+      path,
+      arrayDepth,
+      debug
+    )
   }
   if (type.isTuple()) {
-    return tupleCondition(varName, type, addDependency, project)
+    return tupleCondition(
+      varName,
+      type,
+      addDependency,
+      project,
+      path,
+      arrayDepth,
+      debug
+    )
   }
   if (type.isLiteral()) {
     return literalCondition(varName, type, addDependency)
@@ -399,20 +499,59 @@ function propertyConditions(
   objName: string,
   property: PropertySignature,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string | null {
-  const varName = `${objName}.${property.getName()}`
-  return typeConditions(varName, property.getType(), addDependency, project)
+  // working around a bug in ts-simple-ast
+  const propertyName = property === undefined ? '(???)' : property.getName()
+
+  const varName = `${objName}.${propertyName}`
+  const propertyPath = `${path}.${propertyName}`
+  const expectedType = property.getType().getText()
+  const conditions = typeConditions(
+    varName,
+    property.getType(),
+    addDependency,
+    project,
+    propertyPath,
+    arrayDepth,
+    true,
+    debug
+  )
+  if (debug) {
+    return (
+      conditions &&
+      `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
+        expectedType
+      )}, ${varName})`
+    )
+  }
+  return conditions
 }
 
 function propertiesConditions(
   varName: string,
   properties: ReadonlyArray<PropertySignature>,
   addDependency: IAddDependency,
-  project: Project
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  debug: boolean
 ): string[] {
   return properties
-    .map(prop => propertyConditions(varName, prop, addDependency, project))
+    .map(prop =>
+      propertyConditions(
+        varName,
+        prop,
+        addDependency,
+        project,
+        path,
+        arrayDepth,
+        debug
+      )
+    )
     .filter(v => v !== null) as string[]
 }
 
@@ -422,18 +561,30 @@ function generateTypeGuard(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
-  shortCircuitCondition: string | undefined
+  shortCircuitCondition: string | undefined,
+  debug: boolean
 ): string {
-  const conditions = typeConditions('obj', type, addDependency, project, false)
+  const defaultArgumentName = lowerFirst(typeName)
+  const conditions = typeConditions(
+    'obj',
+    type,
+    addDependency,
+    project,
+    '${argumentName}', // tslint:disable-line:no-invalid-template-strings
+    0,
+    false,
+    debug
+  )
 
-  return `
-    export function ${functionName}(obj: any): obj is ${typeName} {
-        return (
-            ${
-              shortCircuitCondition ? `${shortCircuitCondition} ||\n` : ''
-            }${conditions}
-        )
-    }`
+  const secondArgument = debug
+    ? `argumentName: string = "${defaultArgumentName}"`
+    : `_argumentName?: string`
+  const signature = `export function ${functionName}(obj: any, ${secondArgument}): obj is ${typeName} {\n`
+  const shortCircuit = shortCircuitCondition
+    ? `if (${shortCircuitCondition}) return true\n`
+    : ''
+
+  return [signature, shortCircuit, `return (\n${conditions}\n)\n}\n`].join('')
 }
 
 // -- Process project --
@@ -481,6 +632,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 
 export interface IProcessOptions {
   shortCircuitCondition?: string
+  debug: boolean
 }
 
 export interface IGenerateOptions {
@@ -488,6 +640,21 @@ export interface IGenerateOptions {
   project: string
   processOptions: Readonly<IProcessOptions>
 }
+
+const evaluateFunction = `function evaluate(
+  isCorrect: boolean,
+  varName: string,
+  expected: string,
+  actual: any
+): boolean {
+  if (!isCorrect) {
+    console.error(
+      \`\${varName} type mismatch, expected: \${expected}, found:\`,
+      actual
+    )
+  }
+  return isCorrect
+}\n`
 
 export async function generate({
   paths = [],
@@ -505,7 +672,7 @@ export async function generate({
 
 export function processProject(
   project: Project,
-  options: Readonly<IProcessOptions> = {}
+  options: Readonly<IProcessOptions> = { debug: false }
 ) {
   // Delete previously generated guard.
   project
@@ -519,49 +686,51 @@ export function processProject(
     const functions = sourceFile
       .getChildAtIndex(0)
       .getChildren()
-      .reduce(
-        (acc, child) => {
-          if (!TypeGuards.isJSDocableNode(child)) {
-            return acc
-          }
-          const typeGuardName = getTypeGuardName(child.getJsDocs())
-          if (typeGuardName === null) {
-            return acc
-          }
-          if (!TypeGuards.isExportableNode(child)) {
-            reportError(`Must be exportable:\n\n${child.getText()}\n`)
-            return acc
-          }
-          if (
-            TypeGuards.isEnumDeclaration(child) ||
-            TypeGuards.isInterfaceDeclaration(child) ||
-            TypeGuards.isTypeAliasDeclaration(child)
-          ) {
-            if (!child.isExported()) {
-              reportError(`Node must be exported:\n\n${child.getText()}\n`)
-            }
-            acc.push(
-              generateTypeGuard(
-                typeGuardName,
-                child.getName(),
-                child.getType(),
-                addDependency,
-                project,
-                options.shortCircuitCondition
-              )
-            )
-            const exportName = child.getName()
-            addDependency(sourceFile, exportName, child.isDefaultExport())
-          } else {
-            reportError(`Unsupported:\n\n${child.getText()}\n`)
-            return acc
-          }
+      .reduce<string[]>((acc, child) => {
+        if (!TypeGuards.isJSDocableNode(child)) {
           return acc
-        },
-        [] as string[]
-      )
+        }
+        const typeGuardName = getTypeGuardName(child.getJsDocs())
+        if (typeGuardName === null) {
+          return acc
+        }
+        if (!TypeGuards.isExportableNode(child)) {
+          reportError(`Must be exportable:\n\n${child.getText()}\n`)
+          return acc
+        }
+        if (
+          TypeGuards.isEnumDeclaration(child) ||
+          TypeGuards.isInterfaceDeclaration(child) ||
+          TypeGuards.isTypeAliasDeclaration(child)
+        ) {
+          if (!child.isExported()) {
+            reportError(`Node must be exported:\n\n${child.getText()}\n`)
+          }
+          acc.push(
+            generateTypeGuard(
+              typeGuardName,
+              child.getName(),
+              child.getType(),
+              addDependency,
+              project,
+              options.shortCircuitCondition,
+              options.debug
+            )
+          )
+          const exportName = child.getName()
+          addDependency(sourceFile, exportName, child.isDefaultExport())
+        } else {
+          reportError(`Unsupported:\n\n${child.getText()}\n`)
+          return acc
+        }
+        return acc
+      }, [])
 
     if (functions.length > 0) {
+      if (options.debug) {
+        functions.unshift(evaluateFunction)
+      }
+
       const outFile = project.createSourceFile(
         outFilePath(sourceFile.getFilePath()),
         functions.join('\n'),
