@@ -583,26 +583,8 @@ function generateTypeGuard(
   const shortCircuit = shortCircuitCondition
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
-  const evaluate = debug
-    ? `const evaluate = (
-      isCorrect: boolean,
-      varName: string,
-      expected: string,
-      actual: any
-    ): boolean => {
-      if (!isCorrect) {
-        console.error(\`\${varName} type mismatch, expected: \${expected}\`, actual)
-      }
-      return isCorrect
-    }\n`
-    : ''
 
-  return [
-    signature,
-    shortCircuit,
-    evaluate,
-    `return (\n${conditions}\n)\n}\n`,
-  ].join('')
+  return [signature, shortCircuit, `return (\n${conditions}\n)\n}\n`].join('')
 }
 
 // -- Process project --
@@ -659,6 +641,21 @@ export interface IGenerateOptions {
   processOptions: Readonly<IProcessOptions>
 }
 
+const evaluateFunction = `function evaluate(
+  isCorrect: boolean,
+  varName: string,
+  expected: string,
+  actual: any
+): boolean {
+  if (!isCorrect) {
+    console.error(
+      \`\${varName} type mismatch, expected: \${expected}, found:\`,
+      actual
+    )
+  }
+  return isCorrect
+}\n`
+
 export async function generate({
   paths = [],
   project: tsConfigFilePath,
@@ -689,50 +686,51 @@ export function processProject(
     const functions = sourceFile
       .getChildAtIndex(0)
       .getChildren()
-      .reduce(
-        (acc, child) => {
-          if (!TypeGuards.isJSDocableNode(child)) {
-            return acc
-          }
-          const typeGuardName = getTypeGuardName(child.getJsDocs())
-          if (typeGuardName === null) {
-            return acc
-          }
-          if (!TypeGuards.isExportableNode(child)) {
-            reportError(`Must be exportable:\n\n${child.getText()}\n`)
-            return acc
-          }
-          if (
-            TypeGuards.isEnumDeclaration(child) ||
-            TypeGuards.isInterfaceDeclaration(child) ||
-            TypeGuards.isTypeAliasDeclaration(child)
-          ) {
-            if (!child.isExported()) {
-              reportError(`Node must be exported:\n\n${child.getText()}\n`)
-            }
-            acc.push(
-              generateTypeGuard(
-                typeGuardName,
-                child.getName(),
-                child.getType(),
-                addDependency,
-                project,
-                options.shortCircuitCondition,
-                options.debug
-              )
-            )
-            const exportName = child.getName()
-            addDependency(sourceFile, exportName, child.isDefaultExport())
-          } else {
-            reportError(`Unsupported:\n\n${child.getText()}\n`)
-            return acc
-          }
+      .reduce<string[]>((acc, child) => {
+        if (!TypeGuards.isJSDocableNode(child)) {
           return acc
-        },
-        [] as string[]
-      )
+        }
+        const typeGuardName = getTypeGuardName(child.getJsDocs())
+        if (typeGuardName === null) {
+          return acc
+        }
+        if (!TypeGuards.isExportableNode(child)) {
+          reportError(`Must be exportable:\n\n${child.getText()}\n`)
+          return acc
+        }
+        if (
+          TypeGuards.isEnumDeclaration(child) ||
+          TypeGuards.isInterfaceDeclaration(child) ||
+          TypeGuards.isTypeAliasDeclaration(child)
+        ) {
+          if (!child.isExported()) {
+            reportError(`Node must be exported:\n\n${child.getText()}\n`)
+          }
+          acc.push(
+            generateTypeGuard(
+              typeGuardName,
+              child.getName(),
+              child.getType(),
+              addDependency,
+              project,
+              options.shortCircuitCondition,
+              options.debug
+            )
+          )
+          const exportName = child.getName()
+          addDependency(sourceFile, exportName, child.isDefaultExport())
+        } else {
+          reportError(`Unsupported:\n\n${child.getText()}\n`)
+          return acc
+        }
+        return acc
+      }, [])
 
     if (functions.length > 0) {
+      if (options.debug) {
+        functions.unshift(evaluateFunction)
+      }
+
       const outFile = project.createSourceFile(
         outFilePath(sourceFile.getFilePath()),
         functions.join('\n'),
