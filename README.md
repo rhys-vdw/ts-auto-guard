@@ -10,13 +10,16 @@ This tool aims to allow developers to verify data from untyped sources to ensure
 
 ## Install
 
-Not published yet
+### Yarn
 
 ```
-$ git clone git@github.com:rhys-vdw/ts-auto-guard.git
-$ cd ts-auto-guard
-$ npm install && npm build
-$ npm link
+$ yarn add -D ts-auto-guard
+```
+
+### npm
+
+```
+$ npm install --save-dev ts-auto-guard
 ```
 
 ## Usage
