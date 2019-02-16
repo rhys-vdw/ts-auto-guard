@@ -266,7 +266,7 @@ function objectCondition(
 
     // NOTE: Cast to boolean to stop type guard property and prevent compile
     //       errors.
-    return `${typeGuardName}(${varName}) as boolean`
+    return `${typeGuardName}(${varName}, \`${path}\`) as boolean`
   }
 
   if (type.isInterface()) {
