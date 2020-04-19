@@ -5,7 +5,7 @@
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
 import { defaults } from 'lodash'
-import { FileNotFoundError } from 'ts-simple-ast'
+import { FileNotFoundError } from 'ts-morph'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 

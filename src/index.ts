@@ -1,16 +1,18 @@
 import { flatMap, lowerFirst } from 'lodash'
-import Project, {
+import {
   ExportableNode,
   ImportDeclarationStructure,
   JSDoc,
   JSDocableNode,
   Node,
+  Project,
   PropertySignature,
   SourceFile,
+  StructureKind,
   SyntaxKind,
   Type,
   TypeGuards,
-} from 'ts-simple-ast'
+} from 'ts-morph'
 
 // -- Helpers --
 
@@ -443,7 +445,7 @@ function typeConditions(
   if (type.isArray()) {
     return arrayCondition(
       varName,
-      type.getArrayType()!,
+      type.getArrayElementType()!,
       addDependency,
       project,
       path,
@@ -597,10 +599,10 @@ function findOrCreate(project: Project, path: string): SourceFile {
   return outFile
 }
 
-interface Imports {
+interface IImports {
   [exportName: string]: string
 }
-type Dependencies = Map<SourceFile, Imports>
+type Dependencies = Map<SourceFile, IImports>
 type IAddDependency = (
   sourceFile: SourceFile,
   exportName: string,
@@ -748,11 +750,12 @@ export function processProject(
             )
             const defaultImport = imports.default
             delete imports.default
-            const namedImports = Object.entries(imports).map(
-              ([alias, name]) => (alias === name ? name : { name, alias })
+            const namedImports = Object.entries(imports).map(([alias, name]) =>
+              alias === name ? name : { name, alias }
             )
             structures.push({
               defaultImport,
+              kind: StructureKind.ImportDeclaration,
               moduleSpecifier,
               namedImports,
             })
