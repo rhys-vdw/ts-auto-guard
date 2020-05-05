@@ -667,7 +667,7 @@ export async function generate({
     addFilesFromTsConfig: paths.length === 0,
     tsConfigFilePath,
   })
-  project.addExistingSourceFiles(paths)
+  project.addSourceFilesAtPaths(paths)
   processProject(project, processOptions)
   return project.save()
 }
