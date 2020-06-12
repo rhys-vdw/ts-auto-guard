@@ -5,7 +5,7 @@
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
 import { defaults } from 'lodash'
-import { FileNotFoundError } from 'ts-morph'
+import { errors } from '@ts-morph/common'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 
@@ -76,7 +76,7 @@ async function run() {
     })
     console.log('Done!')
   } catch (error) {
-    if (error instanceof FileNotFoundError) {
+    if (error instanceof errors.FileNotFoundError) {
       console.error(error.message)
     } else {
       throw error
