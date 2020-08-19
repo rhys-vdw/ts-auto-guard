@@ -2,10 +2,10 @@
 
 /* tslint:disable:no-console */
 
+import { errors } from '@ts-morph/common'
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
 import { defaults } from 'lodash'
-import { errors } from '@ts-morph/common'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 
