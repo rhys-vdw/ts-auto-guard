@@ -1,6 +1,6 @@
 import { each, pull } from 'lodash'
 import test from 'tape'
-import Project from 'ts-simple-ast'
+import { Project } from 'ts-morph'
 import { minify, MinifyOptions } from 'uglify-js'
 import { IProcessOptions, processProject } from '../src'
 
@@ -8,7 +8,7 @@ function createProject(): Project {
   return new Project({
     addFilesFromTsConfig: false,
     compilerOptions: { strict: true },
-    useVirtualFileSystem: true,
+    useInMemoryFileSystem: true,
   })
 }
 
@@ -451,7 +451,7 @@ testProcessProject(
     }`,
   },
   {
-    'test.guard.ts': `"use strict";function isFoo(o,s){return!0}exports.__esModule=!0,exports.isFoo=isFoo;`,
+    'test.guard.ts': `"use strict";function isFoo(o,s){return!0}exports.__esModule=!0,exports.isFoo=void 0,exports.isFoo=isFoo;`,
   },
   {
     minifyOptions: {
