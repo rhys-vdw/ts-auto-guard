@@ -2,6 +2,7 @@
   "name": "ts-auto-guard",
   "version": "1.0.0-alpha.1",
   "description": "Generate type guard functions from TypeScript interfaces",
+  "homepage": "https://github.com/rhys-vdw/ts-auto-guard",
   "main": "lib/index.js",
   "scripts": {
     "test": "NODE_ENV=test && yarn run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
