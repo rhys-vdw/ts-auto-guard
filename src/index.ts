@@ -21,7 +21,7 @@ function reportError(message: string, ...args: any[]) {
   console.error(`ERROR: ${message}`, ...args)
 }
 
-function findExportableNode(type: Type): ExportableNode & Node | null {
+function findExportableNode(type: Type): (ExportableNode & Node) | null {
   const symbol = type.getSymbol()
   if (symbol === undefined) {
     return null
