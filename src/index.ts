@@ -672,6 +672,77 @@ export async function generate({
   return project.save()
 }
 
+function processNode(
+  dependencies: Dependencies,
+  project: Project,
+  options: Readonly<IProcessOptions> = { debug: false },
+  sourceFile: SourceFile
+) {
+  let namespace: string
+  return function _processNode(acc: string[], child: Node): string[] {
+    const addDependency = createAddDependency(dependencies)
+    if (!Node.isJSDocableNode(child)) {
+      return acc
+    }
+    if (Node.isNamespaceDeclaration(child)) {
+      namespace = child.getName()
+      const moduleBlock = child.getChildren().find(n => Node.isModuleBlock(n))
+      if (!moduleBlock) {
+        reportError('Module block not found for declaration: ', child.getText())
+        return acc
+      }
+      return moduleBlock
+        .getChildAtIndex(1)
+        .getChildren()
+        .reduce<string[]>(_processNode, acc)
+    }
+    let typeGuardName = getTypeGuardName(child.getJsDocs())
+    const autoGenerate = typeGuardName === null
+    if (typeGuardName === null) {
+      if (Node.hasName(child)) {
+        typeGuardName = `is${namespace}${child.getName()}`
+      } else {
+        return acc
+      }
+    }
+
+    if (!Node.isExportableNode(child)) {
+      if (!autoGenerate) {
+        reportError(`Must be exportable:\n\n${child.getText()}\n`)
+      }
+      return acc
+    }
+    if (
+      Node.isEnumDeclaration(child) ||
+      Node.isInterfaceDeclaration(child) ||
+      Node.isTypeAliasDeclaration(child)
+    ) {
+      if (!child.isExported() && !autoGenerate) {
+        reportError(`Node must be exported:\n\n${child.getText()}\n`)
+      }
+      const typeName = namespace
+        ? `${namespace}.${child.getName()}`
+        : child.getName()
+      acc.push(
+        generateTypeGuard(
+          typeGuardName,
+          typeName,
+          child.getType(),
+          addDependency,
+          project,
+          options.shortCircuitCondition,
+          options.debug
+        )
+      )
+      const exportName = namespace || child.getName()
+      addDependency(sourceFile, exportName, child.isDefaultExport())
+    } else {
+      reportError(`Unsupported:\n\n${child.getText()}\n`)
+      return acc
+    }
+    return acc
+  }
+}
 export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
@@ -684,49 +755,13 @@ export function processProject(
   // Generate new guard files.
   project.getSourceFiles().forEach(sourceFile => {
     const dependencies: Dependencies = new Map()
-    const addDependency = createAddDependency(dependencies)
     const functions = sourceFile
       .getChildAtIndex(0)
       .getChildren()
-      .reduce<string[]>((acc, child) => {
-        if (!TypeGuards.isJSDocableNode(child)) {
-          return acc
-        }
-        const typeGuardName = getTypeGuardName(child.getJsDocs())
-        if (typeGuardName === null) {
-          return acc
-        }
-        if (!TypeGuards.isExportableNode(child)) {
-          reportError(`Must be exportable:\n\n${child.getText()}\n`)
-          return acc
-        }
-        if (
-          TypeGuards.isEnumDeclaration(child) ||
-          TypeGuards.isInterfaceDeclaration(child) ||
-          TypeGuards.isTypeAliasDeclaration(child)
-        ) {
-          if (!child.isExported()) {
-            reportError(`Node must be exported:\n\n${child.getText()}\n`)
-          }
-          acc.push(
-            generateTypeGuard(
-              typeGuardName,
-              child.getName(),
-              child.getType(),
-              addDependency,
-              project,
-              options.shortCircuitCondition,
-              options.debug
-            )
-          )
-          const exportName = child.getName()
-          addDependency(sourceFile, exportName, child.isDefaultExport())
-        } else {
-          reportError(`Unsupported:\n\n${child.getText()}\n`)
-          return acc
-        }
-        return acc
-      }, [])
+      .reduce<string[]>(
+        processNode(dependencies, project, options, sourceFile),
+        []
+      )
 
     if (functions.length > 0) {
       if (options.debug) {
