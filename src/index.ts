@@ -12,6 +12,7 @@ import {
   SyntaxKind,
   Type,
   TypeGuards,
+  ts
 } from 'ts-morph'
 
 // -- Helpers --
@@ -509,8 +510,11 @@ function propertyConditions(
   // working around a bug in ts-simple-ast
   const propertyName = property === undefined ? '(???)' : property.getName()
 
-  const varName = `${objName}.${propertyName}`
-  const propertyPath = `${path}.${propertyName}`
+    const name = property.compilerNode.name;
+  const isIdentifier = name && ts.isIdentifier(name);
+  const propertyPath = isIdentifier ? `${path}.${propertyName}` : `${path}[${propertyName}]`;
+  const varName = isIdentifier ? `${objName}.${propertyName}` : `${objName}[${propertyName}]`;
+    
   const expectedType = property.getType().getText()
   const conditions = typeConditions(
     varName,
