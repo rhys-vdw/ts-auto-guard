@@ -6,7 +6,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "cross-env NODE_ENV=test && yarn run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
-    "build": "tsc && chmod 775 lib/cli.js",
+    "build": "tsc",
     "prepare": "npm run build",
     "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts",
     "format:check": "prettier --list-different src/**/*.ts"
