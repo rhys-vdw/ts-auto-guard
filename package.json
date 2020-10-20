@@ -5,7 +5,7 @@
   "homepage": "https://github.com/rhys-vdw/ts-auto-guard",
   "main": "lib/index.js",
   "scripts": {
-    "test": "cross-env NODE_ENV=test && yarn run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
+    "test": "cross-env NODE_ENV=test && npm run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc",
     "prepare": "npm run build",
     "format": "tslint --fix --project ./tsconfig.json && prettier --write src/**/*.ts",
