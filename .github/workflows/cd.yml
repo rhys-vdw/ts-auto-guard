@@ -3,7 +3,7 @@ name: NPM publish CD workflow
 
 on:
   push:
-    branches: [ npm-cd ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -21,7 +21,6 @@ jobs:
     - run: npm test
     - run: git config --global user.name "GitHub CD bot"
     - run: git config --global user.email "github-cd-bot@example.com"
-    # upgrade npm version in package.json to the tag used in the release.
     - run: npm version prerelease -m "[ci skip] %s"
     - run: npm publish --dry-run
       env:
