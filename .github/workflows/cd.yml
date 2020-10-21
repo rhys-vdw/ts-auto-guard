@@ -7,10 +7,8 @@ on:
 
 jobs:
   build:
-
-    # Run on latest version of ubuntu
+    if: startsWith(github.event, '[ci skip]')
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js 12
@@ -24,7 +22,11 @@ jobs:
     - run: git config --global user.name "GitHub CD bot"
     - run: git config --global user.email "github-cd-bot@example.com"
     # upgrade npm version in package.json to the tag used in the release.
-    - run: npm version prerelease
+    - run: npm version prerelease -m "[ci skip] %s"
     - run: npm publish --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - run: git push
+      env:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
