@@ -1,6 +1,5 @@
 name: NPM publish CD workflow
 
-
 on:
   push:
     branches: [ master ]
@@ -22,7 +21,7 @@ jobs:
     - run: git config --global user.name "GitHub CD bot"
     - run: git config --global user.email "github-cd-bot@example.com"
     - run: npm version prerelease -m "[ci skip] %s"
-    - run: npm publish --dry-run
+    - run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     - run: git push
