@@ -3,7 +3,7 @@ name: NPM publish CD workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: [ npm-cd ]
 
 jobs:
   build:
@@ -21,12 +21,6 @@ jobs:
     - run: npm ci
     - run: npm run build
     - run: npm test
-    - name: "Automated Version Bump"
-      uses: "phips28/gh-action-bump-version@8.0.9"
-      with:
-        tag-prefix: ''
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - run: npm publish --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
