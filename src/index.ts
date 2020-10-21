@@ -2,7 +2,6 @@ import { flatMap, lowerFirst } from 'lodash'
 import {
   ExportableNode,
   ImportDeclarationStructure,
-  JSDoc,
   JSDocableNode,
   Node,
   Project,
@@ -13,6 +12,7 @@ import {
   Type,
   TypeGuards,
 } from 'ts-morph'
+import ts from 'typescript'
 
 // -- Helpers --
 
@@ -99,7 +99,11 @@ function getReadonlyArrayType(type: Type): Type | undefined {
   return type.getTypeArguments()[0]
 }
 
-function getTypeGuardName(jsDocs: ReadonlyArray<JSDoc>): string | null {
+function getTypeGuardName(
+  child: JSDocableNode & Node<ts.Node>,
+  options: IProcessOptions
+): string | null {
+  const jsDocs = child.getJsDocs()
   for (const doc of jsDocs) {
     for (const line of doc.getInnerText().split('\n')) {
       const match = line
@@ -113,6 +117,13 @@ function getTypeGuardName(jsDocs: ReadonlyArray<JSDoc>): string | null {
         }
         return typeGuardName
       }
+    }
+  }
+  if (options.exportAll) {
+    const t = child.getType()
+    const name = t.getSymbol()?.getName()
+    if (name) {
+      return 'is' + name
     }
   }
   return null
@@ -143,7 +154,7 @@ function typeUnionConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string {
   const conditions: string[] = []
   conditions.push(
@@ -157,7 +168,7 @@ function typeUnionConditions(
           path,
           arrayDepth,
           true,
-          debug
+          options
         )
       )
       .filter(v => v !== null) as string[])
@@ -176,7 +187,7 @@ function arrayCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string {
   if (arrayType.getText() === 'never') {
     return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
@@ -191,7 +202,7 @@ function arrayCondition(
     elementPath,
     arrayDepth + 1,
     true,
-    debug
+    options
   )
 
   if (conditions === null) {
@@ -225,7 +236,7 @@ function objectCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string | null {
   const conditions: string[] = []
 
@@ -250,12 +261,17 @@ function objectCondition(
 
   // JSDoc is attached to the type alias rather than the object literal in the
   // case of eg. `type Foo = { x: number }`
-  const docNode: JSDocableNode | null = TypeGuards.isJSDocableNode(declaration)
-    ? declaration
-    : declaration.getParentIfKind(SyntaxKind.TypeAliasDeclaration) || null
+  const declarationResolved = Node.isTypeAliasDeclaration(declaration)
+    ? declaration.getParentIfKind(SyntaxKind.TypeAliasDeclaration)
+    : declaration
 
-  const typeGuardName =
-    docNode === null ? null : getTypeGuardName(docNode.getJsDocs())
+  const jsDocable = Node.isJSDocableNode(declarationResolved)
+    ? declarationResolved
+    : declarationResolved?.getParent()
+
+  const typeGuardName = Node.isJSDocableNode(jsDocable)
+    ? getTypeGuardName(jsDocable, options)
+    : null
 
   if (useGuard && typeGuardName !== null) {
     const sourcePath = declaration.getSourceFile()!.getFilePath()
@@ -273,7 +289,7 @@ function objectCondition(
 
   if (type.isInterface()) {
     if (!useGuard || typeGuardName === null) {
-      if (!TypeGuards.isInterfaceDeclaration(declaration)) {
+      if (!Node.isInterfaceDeclaration(declaration)) {
         throw new TypeError(
           'Extected declaration to be an interface delcaration!'
         )
@@ -287,7 +303,7 @@ function objectCondition(
           path,
           arrayDepth,
           true,
-          debug
+          options
         )
         if (condition !== null) {
           conditions.push(condition)
@@ -304,7 +320,7 @@ function objectCondition(
           project,
           path,
           arrayDepth,
-          debug
+          options
         )
       )
     }
@@ -324,7 +340,7 @@ function objectCondition(
           project,
           path,
           arrayDepth,
-          debug
+          options
         )
       )
     } catch (error) {
@@ -344,7 +360,7 @@ function tupleCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string {
   const types = type.getTupleElements()
   const conditions = types.reduce(
@@ -357,7 +373,7 @@ function tupleCondition(
         path,
         arrayDepth,
         true,
-        debug
+        options
       )
       if (condition !== null) {
         acc.push(condition)
@@ -401,7 +417,7 @@ function typeConditions(
   path: string,
   arrayDepth: number,
   useGuard: boolean,
-  debug: boolean
+  options: IProcessOptions
 ): string | null {
   if (type.isNull()) {
     return eq(varName, 'null')
@@ -428,7 +444,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (type.isIntersection()) {
@@ -439,7 +455,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (type.isArray()) {
@@ -450,7 +466,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (isReadonlyArrayType(type)) {
@@ -461,7 +477,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (isClassType(type)) {
@@ -477,7 +493,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (type.isTuple()) {
@@ -488,7 +504,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
-      debug
+      options
     )
   }
   if (type.isLiteral()) {
@@ -504,8 +520,9 @@ function propertyConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string | null {
+  const { debug } = options
   // working around a bug in ts-simple-ast
   const propertyName = property === undefined ? '(???)' : property.getName()
 
@@ -520,7 +537,7 @@ function propertyConditions(
     propertyPath,
     arrayDepth,
     true,
-    debug
+    options
   )
   if (debug) {
     return (
@@ -540,7 +557,7 @@ function propertiesConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  debug: boolean
+  options: IProcessOptions
 ): string[] {
   return properties
     .map(prop =>
@@ -551,7 +568,7 @@ function propertiesConditions(
         project,
         path,
         arrayDepth,
-        debug
+        options
       )
     )
     .filter(v => v !== null) as string[]
@@ -563,9 +580,9 @@ function generateTypeGuard(
   type: Type,
   addDependency: IAddDependency,
   project: Project,
-  shortCircuitCondition: string | undefined,
-  debug: boolean
+  options: IProcessOptions
 ): string {
+  const { debug, shortCircuitCondition } = options
   const defaultArgumentName = lowerFirst(typeName)
   const conditions = typeConditions(
     'obj',
@@ -575,7 +592,7 @@ function generateTypeGuard(
     '${argumentName}', // tslint:disable-line:no-invalid-template-strings
     0,
     false,
-    debug
+    options
   )
 
   const secondArgument = debug
@@ -602,6 +619,7 @@ function findOrCreate(project: Project, path: string): SourceFile {
 interface IImports {
   [exportName: string]: string
 }
+
 type Dependencies = Map<SourceFile, IImports>
 type IAddDependency = (
   sourceFile: SourceFile,
@@ -633,6 +651,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 }
 
 export interface IProcessOptions {
+  exportAll?: boolean
   shortCircuitCondition?: string
   debug: boolean
 }
@@ -685,48 +704,36 @@ export function processProject(
   project.getSourceFiles().forEach(sourceFile => {
     const dependencies: Dependencies = new Map()
     const addDependency = createAddDependency(dependencies)
-    const functions = sourceFile
-      .getChildAtIndex(0)
-      .getChildren()
-      .reduce<string[]>((acc, child) => {
-        if (!TypeGuards.isJSDocableNode(child)) {
-          return acc
-        }
-        const typeGuardName = getTypeGuardName(child.getJsDocs())
-        if (typeGuardName === null) {
-          return acc
-        }
-        if (!TypeGuards.isExportableNode(child)) {
-          reportError(`Must be exportable:\n\n${child.getText()}\n`)
-          return acc
-        }
+
+    const functions = []
+    const exports = Array.from(sourceFile.getExportedDeclarations().values())
+    for (const exp of exports) {
+      for (const singleExport of exp) {
         if (
-          TypeGuards.isEnumDeclaration(child) ||
-          TypeGuards.isInterfaceDeclaration(child) ||
-          TypeGuards.isTypeAliasDeclaration(child)
+          Node.isTypeAliasDeclaration(singleExport) ||
+          Node.isInterfaceDeclaration(singleExport)
         ) {
-          if (!child.isExported()) {
-            reportError(`Node must be exported:\n\n${child.getText()}\n`)
-          }
-          acc.push(
-            generateTypeGuard(
-              typeGuardName,
-              child.getName(),
-              child.getType(),
-              addDependency,
-              project,
-              options.shortCircuitCondition,
-              options.debug
+          const typeGuardName = getTypeGuardName(singleExport, options)
+          if (typeGuardName !== null) {
+            functions.push(
+              generateTypeGuard(
+                typeGuardName,
+                singleExport.getName(),
+                singleExport.getType(),
+                addDependency,
+                project,
+                options
+              )
             )
-          )
-          const exportName = child.getName()
-          addDependency(sourceFile, exportName, child.isDefaultExport())
-        } else {
-          reportError(`Unsupported:\n\n${child.getText()}\n`)
-          return acc
+            addDependency(
+              sourceFile,
+              singleExport.getName(),
+              singleExport.isDefaultExport()
+            )
+          }
         }
-        return acc
-      }, [])
+      }
+    }
 
     if (functions.length > 0) {
       if (options.debug) {

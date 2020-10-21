@@ -105,6 +105,25 @@ testProcessProject(
 )
 
 testProcessProject(
+  'generates type guards for empty object if exportAll is true',
+  {
+    'test.ts': `
+    export interface Empty {}`,
+  },
+  {
+    'test.guard.ts': `
+    import { Empty } from "./test";
+
+    export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
+        return (
+            typeof obj === "object"
+        )
+    }`,
+  },
+  { options: { exportAll: true, debug: false } }
+)
+
+testProcessProject(
   'generates type guards for boolean',
   {
     'test.ts': `
