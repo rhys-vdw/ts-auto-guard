@@ -1,6 +1,6 @@
 {
   "name": "ts-auto-guard",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0",
   "description": "Generate type guard functions from TypeScript interfaces",
   "homepage": "https://github.com/rhys-vdw/ts-auto-guard",
   "main": "lib/index.js",
