@@ -1,0 +1,32 @@
+name: NPM publish CD workflow
+
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    # Run on latest version of ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 12
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12
+        registry-url: https://registry.npmjs.org/
+    - run: npm ci
+    - run: npm run build
+    - run: npm test
+    - name: "Automated Version Bump"
+      uses: "phips28/gh-action-bump-version@8.0.9"
+      with:
+        tag-prefix: ''
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: npm publish --dry-run
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
