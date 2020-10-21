@@ -21,6 +21,22 @@ jobs:
     - run: npm ci
     - run: npm run build
     - run: npm test
+    - id: set_var
+      run: |
+        content=`cat ./path/to/package.json`
+        # the following lines are only required for multi line json
+        content="${content//'%'/'%25'}"
+        content="${content//$'\n'/'%0A'}"
+        content="${content//$'\r'/'%0D'}"
+        # end of optional handling for multi line json
+        echo "::set-output name=packageJson::$content"
+    - run: echo "${{fromJson(steps.set_var.outputs.packageJson).version}}"
+    - name: Bump release version
+      id: bump_version
+      uses: christian-draeger/increment-semantic-version@1.0.2
+      with:
+        current-version: {{fromJson(steps.set_var.outputs.packageJson).version}}
+        version-fragment: 'feature'
     - run: npm publish --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
