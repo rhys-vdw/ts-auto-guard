@@ -35,7 +35,7 @@ jobs:
       id: bump_version
       uses: christian-draeger/increment-semantic-version@1.0.2
       with:
-        current-version: "{{fromJson(steps.set_var.outputs.packageJson).version}}"
+        current-version: "${{fromJson(steps.set_var.outputs.packageJson).version}}"
         version-fragment: 'feature'
     - run: npm publish --dry-run
       env:
