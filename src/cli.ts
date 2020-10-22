@@ -15,6 +15,7 @@ interface ICliOptions {
   project: string | undefined
   help: boolean
   debug: boolean
+  'export-all': boolean
 }
 
 const optionList = [
@@ -33,6 +34,12 @@ const optionList = [
     name: 'paths',
     type: String,
     typeLabel: '{underline file[]} ...',
+  },
+  {
+    description:
+      'Generate checks for all exported types, even those not marked with comment',
+    name: 'export-all',
+    type: Boolean,
   },
   {
     description: 'Path to `tsconfig.json`.',
@@ -70,6 +77,7 @@ async function run() {
       paths: options.paths,
       processOptions: {
         debug: options.debug,
+        exportAll: options['export-all'],
         shortCircuitCondition: options.shortcircuit,
       },
       project,
