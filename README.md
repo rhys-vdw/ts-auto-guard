@@ -24,20 +24,7 @@ $ npm install --save-dev ts-auto-guard
 
 ## Usage
 
-Annotate interfaces in your project. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
-
-```ts
-// my-project/Person.ts
-
-/** @see {isPerson} ts-auto-guard:type-guard */
-export interface Person {
-  name: string
-  age?: number
-  children: Person[]
-}
-```
-
-Run the CLI tool in the same folder as your project's `tsconfig.json` (optionally passing in paths to the files you'd like it to parse).
+Specify which types to process (see below) and run the CLI tool in the same folder as your project's `tsconfig.json` (optionally passing in paths to the files you'd like it to parse).
 
 ```sh
 $ ts-auto-guard ./my-project/Person.ts
@@ -78,6 +65,28 @@ if (isPerson(person)) {
 } else {
   console.error('Invalid person.json')
 }
+```
+
+## Specifying which types to process
+
+###Specify with annotation
+
+Annotate interfaces in your project or pass. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
+
+```ts
+// my-project/Person.ts
+
+/** @see {isPerson} ts-auto-guard:type-guard */
+export interface Person {
+  name: string
+  age?: number
+  children: Person[]
+}
+```
+###Process all types
+Use `--export-all` parameter to process all exported types:
+```
+$ ts-auto-guard --export-all
 ```
 
 ## Debug mode
