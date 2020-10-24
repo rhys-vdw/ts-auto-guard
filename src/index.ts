@@ -2,13 +2,14 @@ import { flatMap, lowerFirst } from 'lodash'
 import {
   ExportableNode,
   ImportDeclarationStructure,
+  InterfaceDeclaration,
   JSDocableNode,
   Node,
   Project,
   SourceFile,
   StructureKind,
-  SyntaxKind,
   Type,
+  TypeAliasDeclaration,
 } from 'ts-morph'
 import ts from 'typescript'
 
@@ -119,7 +120,8 @@ function getTypeGuardName(
   }
   if (options.exportAll) {
     const t = child.getType()
-    const name = t.getSymbol()?.getName()
+    const symbol = t.getSymbol() || t.getAliasSymbol()
+    const name = symbol?.getName()
     if (name) {
       return 'is' + name
     }
@@ -152,6 +154,7 @@ function typeUnionConditions(
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string {
   const conditions: string[] = []
@@ -166,6 +169,7 @@ function typeUnionConditions(
           path,
           arrayDepth,
           true,
+          records,
           options
         )
       )
@@ -185,6 +189,7 @@ function arrayCondition(
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string {
   if (arrayType.getText() === 'never') {
@@ -200,6 +205,7 @@ function arrayCondition(
     elementPath,
     arrayDepth + 1,
     true,
+    records,
     options
   )
 
@@ -230,10 +236,10 @@ function objectCondition(
   varName: string,
   type: Type,
   addDependency: IAddDependency,
-  useGuard: boolean,
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string | null {
   const conditions: string[] = []
@@ -257,73 +263,45 @@ function objectCondition(
     return null
   }
 
-  // JSDoc is attached to the type alias rather than the object literal in the
-  // case of eg. `type Foo = { x: number }`
-  const declarationResolved = Node.isTypeAliasDeclaration(declaration)
-    ? declaration.getParentIfKind(SyntaxKind.TypeAliasDeclaration)
-    : declaration
-
-  const jsDocable = Node.isJSDocableNode(declarationResolved)
-    ? declarationResolved
-    : declarationResolved?.getParent()
-
-  const typeGuardName = Node.isJSDocableNode(jsDocable)
-    ? getTypeGuardName(jsDocable, options)
-    : null
-
-  if (useGuard && typeGuardName !== null) {
-    const sourcePath = declaration.getSourceFile()!.getFilePath()
-
-    addDependency(
-      findOrCreate(project, outFilePath(sourcePath)),
-      typeGuardName,
-      false
-    )
-
-    // NOTE: Cast to boolean to stop type guard property and prevent compile
-    //       errors.
-    return `${typeGuardName}(${varName}) as boolean`
-  }
-
   if (type.isInterface()) {
-    if (!useGuard || typeGuardName === null) {
-      if (!Node.isInterfaceDeclaration(declaration)) {
-        throw new TypeError(
-          'Extected declaration to be an interface delcaration!'
-        )
-      }
-      declaration.getBaseTypes().forEach(baseType => {
-        const condition = typeConditions(
-          varName,
-          baseType,
-          addDependency,
-          project,
-          path,
-          arrayDepth,
-          true,
-          options
-        )
-        if (condition !== null) {
-          conditions.push(condition)
-        }
-      })
-      if (conditions.length === 0) {
-        conditions.push(objectTypeCondition(varName, type))
-      }
-      conditions.push(
-        ...propertiesConditions(
-          varName,
-          declaration
-            .getProperties()
-            .map(p => ({ name: p.getName(), type: p.getType() })),
-          addDependency,
-          project,
-          path,
-          arrayDepth,
-          options
-        )
+    if (!Node.isInterfaceDeclaration(declaration)) {
+      throw new TypeError(
+        'Extected declaration to be an interface delcaration!'
       )
     }
+    declaration.getBaseTypes().forEach(baseType => {
+      const condition = typeConditions(
+        varName,
+        baseType,
+        addDependency,
+        project,
+        path,
+        arrayDepth,
+        true,
+        records,
+        options
+      )
+      if (condition !== null) {
+        conditions.push(condition)
+      }
+    })
+    if (conditions.length === 0) {
+      conditions.push(objectTypeCondition(varName, type))
+    }
+    conditions.push(
+      ...propertiesConditions(
+        varName,
+        declaration
+          .getProperties()
+          .map(p => ({ name: p.getName(), type: p.getType() })),
+        addDependency,
+        project,
+        path,
+        arrayDepth,
+        records,
+        options
+      )
+    )
   } else {
     conditions.push(objectTypeCondition(varName, type))
     // Get object literal properties...
@@ -350,6 +328,7 @@ function objectCondition(
           project,
           path,
           arrayDepth,
+          records,
           options
         )
       )
@@ -370,6 +349,7 @@ function tupleCondition(
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string {
   const types = type.getTupleElements()
@@ -383,6 +363,7 @@ function tupleCondition(
         path,
         arrayDepth,
         true,
+        records,
         options
       )
       if (condition !== null) {
@@ -419,6 +400,18 @@ function literalCondition(
   return eq(varName, type.getText())
 }
 
+function reusedCondition(
+  type: Type,
+  records: IRecord[],
+  varName: string
+): string | null {
+  const record = records.find(x => x.typeDeclaration.getType() === type)
+  if (record) {
+    return `${record.guardName}(${varName}) as boolean`
+  }
+  return null
+}
+
 function typeConditions(
   varName: string,
   type: Type,
@@ -427,8 +420,13 @@ function typeConditions(
   path: string,
   arrayDepth: number,
   useGuard: boolean,
+  records: IRecord[],
   options: IProcessOptions
 ): string | null {
+  const reused = reusedCondition(type, records, varName)
+  if (useGuard && reused) {
+    return reused
+  }
   if (type.isNull()) {
     return eq(varName, 'null')
   }
@@ -441,6 +439,9 @@ function typeConditions(
   if (type.isBoolean()) {
     return typeOf(varName, 'boolean')
   }
+  // const names = (type.getSymbol()?.getDeclarations() || []).map(declaration => Node.isJSDocableNode(declaration) ? getTypeGuardName(declaration, options) : undefined).filter(x => !!x);
+  // const name = names[0];
+  // type.getSymbol()?.getName()
   if (type.isUnion()) {
     // Seems to be bug here where enums can only be detected with enum
     // literal + union check... odd.
@@ -454,6 +455,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -465,6 +467,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -476,6 +479,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -487,6 +491,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -499,10 +504,10 @@ function typeConditions(
       varName,
       type,
       addDependency,
-      useGuard,
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -514,6 +519,7 @@ function typeConditions(
       project,
       path,
       arrayDepth,
+      records,
       options
     )
   }
@@ -530,6 +536,7 @@ function propertyConditions(
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string | null {
   const { debug } = options
@@ -546,6 +553,7 @@ function propertyConditions(
     propertyPath,
     arrayDepth,
     true,
+    records,
     options
   )
   if (debug) {
@@ -566,6 +574,7 @@ function propertiesConditions(
   project: Project,
   path: string,
   arrayDepth: number,
+  records: IRecord[],
   options: IProcessOptions
 ): string[] {
   return properties
@@ -577,6 +586,7 @@ function propertiesConditions(
         project,
         path,
         arrayDepth,
+        records,
         options
       )
     )
@@ -585,22 +595,24 @@ function propertiesConditions(
 
 function generateTypeGuard(
   functionName: string,
-  typeName: string,
-  type: Type,
+  typeDeclaration: Guardable,
   addDependency: IAddDependency,
   project: Project,
+  records: IRecord[],
   options: IProcessOptions
 ): string {
   const { debug, shortCircuitCondition } = options
+  const typeName = typeDeclaration.getName()
   const defaultArgumentName = lowerFirst(typeName)
   const conditions = typeConditions(
     'obj',
-    type,
+    typeDeclaration.getType(),
     addDependency,
     project,
     '${argumentName}', // tslint:disable-line:no-invalid-template-strings
     0,
     false,
+    records,
     options
   )
 
@@ -616,14 +628,6 @@ function generateTypeGuard(
 }
 
 // -- Process project --
-
-function findOrCreate(project: Project, path: string): SourceFile {
-  let outFile = project.getSourceFile(path)
-  if (outFile === undefined) {
-    outFile = project.createSourceFile(path)
-  }
-  return outFile
-}
 
 interface IImports {
   [exportName: string]: string
@@ -662,7 +666,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 export interface IProcessOptions {
   exportAll?: boolean
   shortCircuitCondition?: string
-  debug: boolean
+  debug?: boolean
 }
 
 export interface IGenerateOptions {
@@ -700,6 +704,13 @@ export async function generate({
   return project.save()
 }
 
+type Guardable = InterfaceDeclaration | TypeAliasDeclaration
+
+interface IRecord {
+  guardName: string
+  typeDeclaration: Guardable
+}
+
 export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
@@ -716,31 +727,45 @@ export function processProject(
 
     const functions = []
     const exports = Array.from(sourceFile.getExportedDeclarations().values())
+    const allTypesDeclarations: Guardable[] = []
     for (const exp of exports) {
       for (const singleExport of exp) {
         if (
           Node.isTypeAliasDeclaration(singleExport) ||
           Node.isInterfaceDeclaration(singleExport)
         ) {
-          const typeGuardName = getTypeGuardName(singleExport, options)
-          if (typeGuardName !== null) {
-            functions.push(
-              generateTypeGuard(
-                typeGuardName,
-                singleExport.getName(),
-                singleExport.getType(),
-                addDependency,
-                project,
-                options
-              )
-            )
-            addDependency(
-              sourceFile,
-              singleExport.getName(),
-              singleExport.isDefaultExport()
-            )
-          }
+          allTypesDeclarations.push(singleExport)
         }
+      }
+    }
+
+    const records: IRecord[] = []
+
+    for (const typeDeclaration of allTypesDeclarations) {
+      const typeGuardName = getTypeGuardName(typeDeclaration, options)
+      if (typeGuardName !== null) {
+        records.push({ guardName: typeGuardName, typeDeclaration })
+      }
+    }
+
+    for (const typeDeclaration of allTypesDeclarations) {
+      const typeGuardName = getTypeGuardName(typeDeclaration, options)
+      if (typeGuardName !== null) {
+        functions.push(
+          generateTypeGuard(
+            typeGuardName,
+            typeDeclaration,
+            addDependency,
+            project,
+            records,
+            options
+          )
+        )
+        addDependency(
+          sourceFile,
+          typeDeclaration.getName(),
+          typeDeclaration.isDefaultExport()
+        )
       }
     }
 

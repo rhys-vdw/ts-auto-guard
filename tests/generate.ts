@@ -526,3 +526,93 @@ testProcessProject(
     `,
   }
 )
+
+testProcessProject(
+  'generates type guards for recursive types',
+  {
+    'test.ts': `
+   /** @see {isBranch1} ts-auto-guard:type-guard */
+   export type Branch1 = Branch1[] | string;
+   
+   /** @see {isBranch2} ts-auto-guard:type-guard */
+   export type Branch2 = { branches: Branch2[] } | string;
+   
+   /** @see {isBranch3} ts-auto-guard:type-guard */
+   export type Branch3 = { branches: Branch3[] } | {branches: Branch3 }[] | string;
+    `,
+  },
+  {
+    'test.guard.ts': `
+    import { Branch1, Branch2, Branch3 } from "./test";
+    
+    export function isBranch1(obj: any, _argumentName?: string): obj is Branch1 {
+        return (
+            (
+                typeof obj === "string" ||
+                Array.isArray(obj) &&
+                obj.every((e: any) =>
+                    isBranch1(e) as boolean
+                )
+            )
+        )
+    }
+    
+    export function isBranch2(obj: any, _argumentName?: string): obj is Branch2 {
+        return (
+            (
+                typeof obj === "string" ||
+                typeof obj === "object" &&
+                Array.isArray(obj.branches) &&
+                obj.branches.every((e: any) =>
+                    isBranch2(e) as boolean
+                )
+            )
+        )
+    }
+    
+    export function isBranch3(obj: any, _argumentName?: string): obj is Branch3 {
+        return (
+            (
+                typeof obj === "string" ||
+                typeof obj === "object" &&
+                Array.isArray(obj.branches) &&
+                obj.branches.every((e: any) =>
+                    isBranch3(e) as boolean
+                ) ||
+                Array.isArray(obj) &&
+                obj.every((e: any) =>
+                    typeof e === "object" &&
+                    isBranch3(e.branches) as boolean
+                )
+            )
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generated type guards for discriminated unions',
+  {
+    'test.ts': `
+    export type X = { type: 'a', value: number } | { type: 'b', value: string }
+    `,
+  },
+  {
+    'test.guard.ts': `
+    import { X } from "./test";
+
+    export function isX(obj: any, _argumentName?: string): obj is X {
+        return (
+            (
+                typeof obj === "object" &&
+                obj.type === "a" &&
+                typeof obj.value === "number" ||
+                typeof obj === "object" &&
+                obj.type === "b" &&
+                typeof obj.value === "string"
+            )
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
