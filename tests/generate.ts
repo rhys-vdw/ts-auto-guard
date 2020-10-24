@@ -616,3 +616,30 @@ testProcessProject(
   },
   { options: { exportAll: true } }
 )
+
+testProcessProject(
+  'generated type guards for enums',
+  {
+    'test.ts': `
+    export enum Types{
+        TheGood,
+        TheBad,
+        TheTypeSafe
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Types } from "./test";
+    
+    export function isTypes(obj: any, _argumentName?: string): obj is Types {
+        return (
+            (
+                obj === Types.TheGood ||
+                obj === Types.TheBad ||
+                obj === Types.TheTypeSafe
+            )
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)

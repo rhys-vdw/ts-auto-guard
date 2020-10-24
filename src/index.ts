@@ -1,5 +1,6 @@
 import { flatMap, lowerFirst } from 'lodash'
 import {
+  EnumDeclaration,
   ExportableNode,
   ImportDeclarationStructure,
   InterfaceDeclaration,
@@ -396,6 +397,11 @@ function literalCondition(
       return null
     }
     typeToDependency(type, addDependency)
+    // type.getText() returns incorrect module name for some reason
+    return eq(
+      varName,
+      `${node.getSymbol()!.getName()}.${type.getSymbol()!.getName()}`
+    )
   }
   return eq(varName, type.getText())
 }
@@ -439,9 +445,6 @@ function typeConditions(
   if (type.isBoolean()) {
     return typeOf(varName, 'boolean')
   }
-  // const names = (type.getSymbol()?.getDeclarations() || []).map(declaration => Node.isJSDocableNode(declaration) ? getTypeGuardName(declaration, options) : undefined).filter(x => !!x);
-  // const name = names[0];
-  // type.getSymbol()?.getName()
   if (type.isUnion()) {
     // Seems to be bug here where enums can only be detected with enum
     // literal + union check... odd.
@@ -704,7 +707,7 @@ export async function generate({
   return project.save()
 }
 
-type Guardable = InterfaceDeclaration | TypeAliasDeclaration
+type Guardable = InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration
 
 interface IRecord {
   guardName: string
@@ -732,7 +735,8 @@ export function processProject(
       for (const singleExport of exp) {
         if (
           Node.isTypeAliasDeclaration(singleExport) ||
-          Node.isInterfaceDeclaration(singleExport)
+          Node.isInterfaceDeclaration(singleExport) ||
+          Node.isEnumDeclaration(singleExport)
         ) {
           allTypesDeclarations.push(singleExport)
         }
