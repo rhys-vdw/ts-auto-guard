@@ -5,12 +5,10 @@ import {
   JSDocableNode,
   Node,
   Project,
-  PropertySignature,
   SourceFile,
   StructureKind,
   SyntaxKind,
   Type,
-  TypeGuards,
 } from 'ts-morph'
 import ts from 'typescript'
 
@@ -29,7 +27,7 @@ function findExportableNode(type: Type): (ExportableNode & Node) | null {
 
   return (
     flatMap(symbol.getDeclarations(), d => [d, ...d.getAncestors()])
-      .filter(TypeGuards.isExportableNode)
+      .filter(Node.isExportableNode)
       .find(n => n.isExported()) || null
   )
 }
@@ -67,11 +65,11 @@ function isClassType(type: Type): boolean {
   }
 
   for (const declaration of symbol.getDeclarations()) {
-    if (TypeGuards.isClassDeclaration(declaration)) {
+    if (Node.isClassDeclaration(declaration)) {
       return true
     }
     if (
-      TypeGuards.isVariableDeclaration(declaration) &&
+      Node.isVariableDeclaration(declaration) &&
       declaration.getType().getConstructSignatures().length > 0
     ) {
       return true
@@ -315,7 +313,9 @@ function objectCondition(
       conditions.push(
         ...propertiesConditions(
           varName,
-          declaration.getProperties(),
+          declaration
+            .getProperties()
+            .map(p => ({ name: p.getName(), type: p.getType() })),
           addDependency,
           project,
           path,
@@ -329,9 +329,19 @@ function objectCondition(
     // Get object literal properties...
     try {
       const properties = type.getProperties()
-      const propertySignatures = properties.map(
-        p => p.getDeclarations()[0] as PropertySignature
-      )
+      const typeDeclarations = type.getSymbol()?.getDeclarations()
+
+      const propertySignatures = properties.map(p => {
+        const propertyDeclarations = p.getDeclarations()
+        const typeAtLocation =
+          propertyDeclarations.length !== 0
+            ? p.getTypeAtLocation(propertyDeclarations[0])
+            : p.getTypeAtLocation((typeDeclarations || [])[0])
+        return {
+          name: p.getName(),
+          type: typeAtLocation,
+        }
+      })
       conditions.push(
         ...propertiesConditions(
           varName,
@@ -394,13 +404,13 @@ function literalCondition(
     const node = type
       .getSymbol()!
       .getDeclarations()
-      .find(TypeGuards.isEnumMember)!
+      .find(Node.isEnumMember)!
       .getParent()
     if (node === undefined) {
       reportError("Couldn't find enum literal parent")
       return null
     }
-    if (!TypeGuards.isEnumDeclaration(node)) {
+    if (!Node.isEnumDeclaration(node)) {
       reportError('Enum literal parent was not an enum declaration')
       return null
     }
@@ -515,7 +525,7 @@ function typeConditions(
 
 function propertyConditions(
   objName: string,
-  property: PropertySignature,
+  property: { name: string; type: Type },
   addDependency: IAddDependency,
   project: Project,
   path: string,
@@ -523,15 +533,14 @@ function propertyConditions(
   options: IProcessOptions
 ): string | null {
   const { debug } = options
-  // working around a bug in ts-simple-ast
-  const propertyName = property === undefined ? '(???)' : property.getName()
+  const propertyName = property.name
 
   const varName = `${objName}.${propertyName}`
   const propertyPath = `${path}.${propertyName}`
-  const expectedType = property.getType().getText()
+  const expectedType = property.type.getText()
   const conditions = typeConditions(
     varName,
-    property.getType(),
+    property.type,
     addDependency,
     project,
     propertyPath,
@@ -552,7 +561,7 @@ function propertyConditions(
 
 function propertiesConditions(
   varName: string,
-  properties: ReadonlyArray<PropertySignature>,
+  properties: ReadonlyArray<{ name: string; type: Type }>,
   addDependency: IAddDependency,
   project: Project,
   path: string,

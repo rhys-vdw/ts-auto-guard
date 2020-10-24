@@ -68,7 +68,8 @@ function testProcessProject(
             sourceText = sourceFile.getText()
           }
 
-          t.equal(sourceText, expectedFile.getText(), filePath)
+          const expectedText = expectedFile.getText()
+          t.equal(sourceText, expectedText, filePath)
         }
       }
     }
@@ -477,5 +478,51 @@ testProcessProject(
       compress: { global_defs: { DEBUG: true } },
     },
     options: { shortCircuitCondition: 'DEBUG', debug: false },
+  }
+)
+
+testProcessProject(
+  'generates type guards for mapped types',
+  {
+    'test.ts': `
+    /** @see {isPropertyValueType} ts-auto-guard:type-guard */
+    export type PropertyValueType = {value: string};
+    
+    /** @see {isPropertyName} ts-auto-guard:type-guard */
+    export type PropertyName = 'name' | 'value'; 
+    
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      [key in PropertyName]: PropertyValueType
+    }`,
+  },
+  {
+    'test.guard.ts': `
+     import { PropertyValueType, PropertyName, Foo } from "./test";
+    
+     export function isPropertyValueType(obj: any, _argumentName?: string): obj is PropertyValueType {
+        return (
+          typeof obj === "object" &&
+          typeof obj.value === "string"
+        )
+      }
+      
+     export function isPropertyName(obj: any, _argumentName?: string): obj is PropertyName {
+       return (
+         (
+           obj === "name" ||
+           obj === "value"
+         )
+       )
+     }
+      
+     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+       return (
+         typeof obj === "object" &&
+         isPropertyValueType(obj.name) as boolean && 
+         isPropertyValueType(obj.value) as boolean
+       )
+     }
+    `,
   }
 )
