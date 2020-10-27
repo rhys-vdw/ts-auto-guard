@@ -32,7 +32,7 @@
   "devDependencies": {
     "@detools/tap-diff": "^0.2.2",
     "@types/node": "^14.6.0",
-    "@types/tape": "^4.2.32",
+    "@types/tape": "^4.13.0",
     "@types/uglify-js": "^3.11.1",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.6.0",
