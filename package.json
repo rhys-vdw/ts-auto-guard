@@ -39,7 +39,7 @@
     "@typescript-eslint/parser": "^4.6.0",
     "cross-env": "^7.0.2",
     "eslint": "^7.12.1",
-    "prettier": "2.0.5",
+    "prettier": "^2.1.2",
     "tape": "^5.0.1",
     "ts-node": "^9.0.0",
     "uglify-js": "^3.4.9"
