@@ -1,7 +1,7 @@
 .github/
 .gitignore
 .travis.yml
-tsconfig.json
-tslint.json
+.eslintignore
+.eslintrc.js
 .prettierrc
 src/

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-/* tslint:disable:no-console */
-
 import { errors } from '@ts-morph/common'
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
@@ -93,10 +91,9 @@ async function run() {
 }
 
 if (options.help) {
-  // tslint:disable-next-line:no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { name, version, description } = require('../package.json')
 
-  // tslint:disable:object-literal-sort-keys
   console.log(
     commandLineUsage([
       {
@@ -109,7 +106,6 @@ if (options.help) {
       },
     ])
   )
-  // tslint:enable:object-literal-sort-keys
 } else {
   run()
 }
