@@ -33,7 +33,7 @@
     "@detools/tap-diff": "^0.2.2",
     "@types/node": "^14.6.0",
     "@types/tape": "^4.2.32",
-    "@types/uglify-js": "^3.0.3",
+    "@types/uglify-js": "^3.11.1",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.6.0",
     "cross-env": "^7.0.2",
@@ -42,6 +42,6 @@
     "tape": "^5.0.1",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
-    "uglify-js": "^3.4.9"
+    "uglify-js": "^3.11.4"
   }
 }
