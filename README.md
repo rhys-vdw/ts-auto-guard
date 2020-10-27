@@ -77,7 +77,7 @@ Annotate interfaces in your project or pass. ts-auto-guard will generate guards 
 // my-project/Person.ts
 
 /** @see {isPerson} ts-auto-guard:type-guard */
-export interface Person {
+export interface Person { // !do not forget to export - only exported types are processed
   name: string
   age?: number
   children: Person[]
