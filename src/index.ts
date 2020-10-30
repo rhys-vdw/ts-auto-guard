@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import { flatMap, lowerFirst } from 'lodash'
 import {
   EnumDeclaration,
@@ -16,8 +18,7 @@ import ts from 'typescript'
 
 // -- Helpers --
 
-function reportError(message: string, ...args: any[]) {
-  // tslint:disable-next-line:no-console
+function reportError(message: string, ...args: unknown[]) {
   console.error(`ERROR: ${message}`, ...args)
 }
 
@@ -717,7 +718,7 @@ interface IRecord {
 export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
-) {
+): void {
   // Delete previously generated guard.
   project
     .getSourceFiles('./**/*.guard.ts')
@@ -824,6 +825,4 @@ export function processProject(
       outFile.formatText()
     }
   })
-
-  return project.save()
 }
