@@ -3,13 +3,10 @@ name: NPM publish CD workflow
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:
 
 jobs:
   build:
-    # if triggered by push, ignore commits that workflow pushed itself 
-    # (so allow only if triggered manually or by commit not starting with '[ci skip]')
-    if: "github.event_name === 'workflow_dispatch' || !startsWith(github.event.head_commit.message, '[ci skip]')"
+    if: "!startsWith(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -18,19 +15,16 @@ jobs:
       with:
         node-version: 12
         registry-url: https://registry.npmjs.org/
-
-    # first push the version to git to avoid publishing smth that is not pushed yet 
-    # (which can happen if there is another commit while this workflow is still running)
-    - run: git config --global user.name "GitHub CD bot"
-    - run: git config --global user.email "github-cd-bot@example.com"
-    - run: npm version prerelease -m "[ci skip] %s"
-    - run: git push
-      env:
-        github-token: ${{ secrets.GITHUB_TOKEN }}    
-
     - run: npm ci
     - run: npm run build
     - run: npm test
+    - run: git config --global user.name "GitHub CD bot"
+    - run: git config --global user.email "github-cd-bot@example.com"
+    - run: npm version prerelease -m "[ci skip] %s"
     - run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - run: git push
+      env:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
