@@ -156,7 +156,7 @@ function typeUnionConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const conditions: string[] = []
@@ -191,7 +191,7 @@ function arrayCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   if (arrayType.getText() === 'never') {
@@ -241,7 +241,7 @@ function objectCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const conditions: string[] = []
@@ -351,7 +351,7 @@ function tupleCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const types = type.getTupleElements()
@@ -409,7 +409,7 @@ function literalCondition(
 
 function reusedCondition(
   type: Type,
-  records: IRecord[],
+  records: readonly IRecord[],
   varName: string
 ): string | null {
   const record = records.find(x => x.typeDeclaration.getType() === type)
@@ -427,7 +427,7 @@ function typeConditions(
   path: string,
   arrayDepth: number,
   useGuard: boolean,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const reused = reusedCondition(type, records, varName)
@@ -540,7 +540,7 @@ function propertyConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const { debug } = options
@@ -578,7 +578,7 @@ function propertiesConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string[] {
   return properties
@@ -602,7 +602,7 @@ function generateTypeGuard(
   typeDeclaration: Guardable,
   addDependency: IAddDependency,
   project: Project,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const { debug, shortCircuitCondition } = options
