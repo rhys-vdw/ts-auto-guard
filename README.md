@@ -69,7 +69,7 @@ if (isPerson(person)) {
 
 ## Specifying which types to process
 
-###Specify with annotation
+### Specify with annotation
 
 Annotate interfaces in your project or pass. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
 
@@ -83,7 +83,7 @@ export interface Person { // !do not forget to export - only exported types are 
   children: Person[]
 }
 ```
-###Process all types
+### Process all types
 Use `--export-all` parameter to process all exported types:
 ```
 $ ts-auto-guard --export-all
