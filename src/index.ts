@@ -82,10 +82,6 @@ function isClassType(type: Type): boolean {
   return false
 }
 
-function isFunctionType(type: Type): boolean {
-  return type.getCallSignatures().length > 0
-}
-
 function isReadonlyArrayType(type: Type): boolean {
   const symbol = type.getSymbol()
   if (symbol === undefined) {
@@ -134,7 +130,7 @@ function getTypeGuardName(
 // -- Main program --
 
 function ors(...statements: string[]): string {
-  return statements.join(' || \n')
+  return parens(statements.join(' || \n'))
 }
 
 function ands(...statements: string[]): string {
@@ -143,6 +139,10 @@ function ands(...statements: string[]): string {
 
 function eq(a: string, b: string): string {
   return `${a} === ${b}`
+}
+
+function ne(a: string, b: string): string {
+  return `${a} !== ${b}`
 }
 
 function typeOf(varName: string, type: string): string {
@@ -156,7 +156,7 @@ function typeUnionConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const conditions: string[] = []
@@ -177,11 +177,11 @@ function typeUnionConditions(
       )
       .filter(v => v !== null) as string[])
   )
-  return parens(ors(...conditions))
+  return ors(...conditions)
 }
 
 function parens(code: string) {
-  return `(\n${code}\n)`
+  return `(${code})`
 }
 
 function arrayCondition(
@@ -191,7 +191,7 @@ function arrayCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   if (arrayType.getText() === 'never') {
@@ -230,8 +230,11 @@ function arrayCondition(
   )
 }
 
-function objectTypeCondition(varName: string, type: Type): string {
-  return typeOf(varName, isFunctionType(type) ? 'function' : 'object')
+function objectTypeCondition(varName: string): string {
+  return ors(
+    ands(ne(varName, 'null'), typeOf(varName, 'object')),
+    typeOf(varName, 'function')
+  )
 }
 
 function objectCondition(
@@ -241,7 +244,7 @@ function objectCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const conditions: string[] = []
@@ -288,7 +291,7 @@ function objectCondition(
       }
     })
     if (conditions.length === 0) {
-      conditions.push(objectTypeCondition(varName, type))
+      conditions.push(objectTypeCondition(varName))
     }
     conditions.push(
       ...propertiesConditions(
@@ -305,7 +308,7 @@ function objectCondition(
       )
     )
   } else {
-    conditions.push(objectTypeCondition(varName, type))
+    conditions.push(objectTypeCondition(varName))
     // Get object literal properties...
     try {
       const properties = type.getProperties()
@@ -351,7 +354,7 @@ function tupleCondition(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const types = type.getTupleElements()
@@ -409,7 +412,7 @@ function literalCondition(
 
 function reusedCondition(
   type: Type,
-  records: IRecord[],
+  records: readonly IRecord[],
   varName: string
 ): string | null {
   const record = records.find(x => x.typeDeclaration.getType() === type)
@@ -427,7 +430,7 @@ function typeConditions(
   path: string,
   arrayDepth: number,
   useGuard: boolean,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const reused = reusedCondition(type, records, varName)
@@ -540,7 +543,7 @@ function propertyConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
   const { debug } = options
@@ -578,7 +581,7 @@ function propertiesConditions(
   project: Project,
   path: string,
   arrayDepth: number,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string[] {
   return properties
@@ -602,7 +605,7 @@ function generateTypeGuard(
   typeDeclaration: Guardable,
   addDependency: IAddDependency,
   project: Project,
-  records: IRecord[],
+  records: readonly IRecord[],
   options: IProcessOptions
 ): string {
   const { debug, shortCircuitCondition } = options
