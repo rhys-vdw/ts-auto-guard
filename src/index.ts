@@ -82,10 +82,6 @@ function isClassType(type: Type): boolean {
   return false
 }
 
-function isFunctionType(type: Type): boolean {
-  return type.getCallSignatures().length > 0
-}
-
 function isReadonlyArrayType(type: Type): boolean {
   const symbol = type.getSymbol()
   if (symbol === undefined) {
@@ -134,7 +130,7 @@ function getTypeGuardName(
 // -- Main program --
 
 function ors(...statements: string[]): string {
-  return statements.join(' || \n')
+  return parens(statements.join(' || \n'))
 }
 
 function ands(...statements: string[]): string {
@@ -143,6 +139,10 @@ function ands(...statements: string[]): string {
 
 function eq(a: string, b: string): string {
   return `${a} === ${b}`
+}
+
+function ne(a: string, b: string): string {
+  return `${a} !== ${b}`
 }
 
 function typeOf(varName: string, type: string): string {
@@ -177,11 +177,11 @@ function typeUnionConditions(
       )
       .filter(v => v !== null) as string[])
   )
-  return parens(ors(...conditions))
+  return ors(...conditions)
 }
 
 function parens(code: string) {
-  return `(\n${code}\n)`
+  return `(${code})`
 }
 
 function arrayCondition(
@@ -230,8 +230,11 @@ function arrayCondition(
   )
 }
 
-function objectTypeCondition(varName: string, type: Type): string {
-  return typeOf(varName, isFunctionType(type) ? 'function' : 'object')
+function objectTypeCondition(varName: string): string {
+  return ors(
+    ands(ne(varName, 'null'), typeOf(varName, 'object')),
+    typeOf(varName, 'function')
+  )
 }
 
 function objectCondition(
@@ -288,7 +291,7 @@ function objectCondition(
       }
     })
     if (conditions.length === 0) {
-      conditions.push(objectTypeCondition(varName, type))
+      conditions.push(objectTypeCondition(varName))
     }
     conditions.push(
       ...propertiesConditions(
@@ -305,7 +308,7 @@ function objectCondition(
       )
     )
   } else {
-    conditions.push(objectTypeCondition(varName, type))
+    conditions.push(objectTypeCondition(varName))
     // Get object literal properties...
     try {
       const properties = type.getProperties()

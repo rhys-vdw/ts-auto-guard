@@ -49,28 +49,26 @@ function testProcessProject(
         t.fail(`unexpected file ${filePath}`)
       } else {
         pull(expectedFilenames, filePath)
-        if (sourceFile !== undefined) {
-          const expectedFile = project.createSourceFile(
-            `${filePath}.expected`,
-            expectedRaw
+        const expectedFile = project.createSourceFile(
+          `${filePath}.expected`,
+          expectedRaw
+        )
+        let sourceText: string
+        if (minifyOptions !== undefined) {
+          const emitOutput = sourceFile.getEmitOutput()
+          const result = minify(
+            emitOutput.getOutputFiles()[0].getText(),
+            minifyOptions
           )
-          let sourceText: string
-          if (minifyOptions !== undefined) {
-            const emitOutput = sourceFile.getEmitOutput()
-            const result = minify(
-              emitOutput.getOutputFiles()[0].getText(),
-              minifyOptions
-            )
-            t.error(result.error, 'UglifyJS should succeed')
-            sourceText = result.code
-          } else {
-            expectedFile.formatText()
-            sourceText = sourceFile.getText()
-          }
-
-          const expectedText = expectedFile.getText()
-          t.equal(sourceText, expectedText, filePath)
+          t.error(result.error, 'UglifyJS should succeed')
+          sourceText = result.code
+        } else {
+          expectedFile.formatText()
+          sourceText = sourceFile.getText()
         }
+
+        const expectedText = expectedFile.getText()
+        t.equal(sourceText, expectedText, filePath)
       }
     }
     for (const filePath of expectedFilenames) {
@@ -99,8 +97,10 @@ testProcessProject(
 
     export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
         return (
-            typeof obj === "object"
-        )
+              (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function")
+           )
     }`,
   }
 )
@@ -117,7 +117,9 @@ testProcessProject(
 
     export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
         return (
-            typeof obj === "object"
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function")
         )
     }`,
   },
@@ -159,7 +161,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
             typeof obj.foo === "number" &&
             typeof obj.bar === "string"
         )
@@ -185,7 +189,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.foo === "number" &&
             typeof obj.bar === "string"
         )
@@ -210,19 +216,15 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
-            (
-              typeof obj.foo === "undefined" ||
-              typeof obj.foo === "number"
-            ) &&
-            (
-              typeof obj.bar === "undefined" ||
-              typeof obj.bar === "number"
-            ) &&
-            (
-              typeof obj.baz === "undefined" ||
-              typeof obj.baz === "number"
-            )
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
+            ( typeof obj.foo === "undefined" ||
+              typeof obj.foo === "number" ) &&
+            ( typeof obj.bar === "undefined" ||
+              typeof obj.bar === "number" ) &&
+            ( typeof obj.baz === "undefined" ||
+              typeof obj.baz === "number" )
         )
     }`,
   }
@@ -247,8 +249,12 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
-            typeof obj.foo === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
+            (obj.foo !== null &&
+              typeof obj.foo === "object" ||
+              typeof obj.foo === "function") &&
             typeof obj.foo.bar === "number"
         )
     }`,
@@ -275,14 +281,18 @@ testProcessProject(
 
     export function isBar(obj: any, _argumentName?: string): obj is Bar {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.bar === "number"
         )
     }
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             isBar(obj.foo) as boolean
         )
     }`,
@@ -308,7 +318,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.bar === "number" &&
             typeof obj.foo === "number"
         )
@@ -336,7 +348,9 @@ testProcessProject(
 
     export function isBar(obj: any, _argumentName?: string): obj is Bar {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.bar === "number"
         )
     }
@@ -369,7 +383,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.bar === "number" &&
             typeof obj.foo === "number"
         )
@@ -397,7 +413,9 @@ testProcessProject(
 
     export function isBar(obj: any, _argumentName?: string): obj is Bar {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.bar === "number"
         )
     }
@@ -426,7 +444,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.foo === "number"
         )
     }`,
@@ -451,7 +471,9 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.foo === "number"
         )
     }`,
@@ -474,7 +496,9 @@ testProcessProject(
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         if (DEBUG) return true
         return (
-            typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
             typeof obj.foo === "number"
         )
     }`,
@@ -527,23 +551,25 @@ testProcessProject(
     
      export function isPropertyValueType(obj: any, _argumentName?: string): obj is PropertyValueType {
         return (
-          typeof obj === "object" &&
+            (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
           typeof obj.value === "string"
-        )
+          )
       }
       
      export function isPropertyName(obj: any, _argumentName?: string): obj is PropertyName {
        return (
-         (
-           obj === "name" ||
-           obj === "value"
-         )
+         (obj === "name" ||
+           obj === "value")
        )
      }
       
      export function isFoo(obj: any, _argumentName?: string): obj is Foo {
        return (
-         typeof obj === "object" &&
+         (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function") &&
          isPropertyValueType(obj.name) as boolean && 
          isPropertyValueType(obj.value) as boolean
        )
@@ -572,44 +598,44 @@ testProcessProject(
     
     export function isBranch1(obj: any, _argumentName?: string): obj is Branch1 {
         return (
-            (
-                typeof obj === "string" ||
+            (typeof obj === "string" ||
                 Array.isArray(obj) &&
                 obj.every((e: any) =>
                     isBranch1(e) as boolean
-                )
-            )
+                ))
         )
     }
     
     export function isBranch2(obj: any, _argumentName?: string): obj is Branch2 {
         return (
-            (
-                typeof obj === "string" ||
-                typeof obj === "object" &&
+            (typeof obj === "string" ||
+            (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
                 Array.isArray(obj.branches) &&
                 obj.branches.every((e: any) =>
                     isBranch2(e) as boolean
-                )
-            )
+                ))
         )
     }
     
     export function isBranch3(obj: any, _argumentName?: string): obj is Branch3 {
         return (
-            (
-                typeof obj === "string" ||
-                typeof obj === "object" &&
+            (typeof obj === "string" ||
+                (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
                 Array.isArray(obj.branches) &&
                 obj.branches.every((e: any) =>
                     isBranch3(e) as boolean
                 ) ||
                 Array.isArray(obj) &&
                 obj.every((e: any) =>
-                    typeof e === "object" &&
+                    (e !== null &&
+                      typeof e === "object" ||
+                      typeof e === "function")  &&
                     isBranch3(e.branches) as boolean
-                )
-            )
+                ))
         )
     }`,
   }
@@ -628,15 +654,17 @@ testProcessProject(
 
     export function isX(obj: any, _argumentName?: string): obj is X {
         return (
-            (
-                typeof obj === "object" &&
+            ((obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
                 obj.type === "a" &&
                 typeof obj.value === "number" ||
-                typeof obj === "object" &&
+                (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
                 obj.type === "b" &&
-                typeof obj.value === "string"
+                typeof obj.value === "string")
             )
-        )
     }`,
   },
   { options: { exportAll: true } }
@@ -658,11 +686,9 @@ testProcessProject(
     
     export function isTypes(obj: any, _argumentName?: string): obj is Types {
         return (
-            (
-                obj === Types.TheGood ||
+            (obj === Types.TheGood ||
                 obj === Types.TheBad ||
-                obj === Types.TheTypeSafe
-            )
+                obj === Types.TheTypeSafe)
         )
     }`,
   },
