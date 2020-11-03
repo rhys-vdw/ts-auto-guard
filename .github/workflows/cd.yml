@@ -2,29 +2,28 @@ name: NPM publish CD workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
     if: "!startsWith(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js 12
-      uses: actions/setup-node@v1
-      with:
-        node-version: 12
-        registry-url: https://registry.npmjs.org/
-    - run: npm ci
-    - run: npm run build
-    - run: npm test
-    - run: git config --global user.name "GitHub CD bot"
-    - run: git config --global user.email "github-cd-bot@example.com"
-    - run: npm version prerelease -m "[ci skip] %s"
-    - run: npm publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    - run: git push
-      env:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-
+      - uses: actions/checkout@v2
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: git config --global user.name "GitHub CD bot"
+      - run: git config --global user.email "github-cd-bot@example.com"
+      - run: npm version prerelease -m "[ci skip] %s"
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: git push --follow-tags
+        env:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
