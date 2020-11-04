@@ -15,7 +15,6 @@ import {
   TypeAliasDeclaration,
 } from 'ts-morph'
 import ts from 'typescript'
-import { isIdentifier } from './identifier-regex'
 
 // -- Helpers --
 
@@ -549,11 +548,11 @@ function propertyConditions(
   const { debug } = options
   const propertyName = property.name
 
-  const identifier = isIdentifier(propertyName)
-  const varName = identifier
+  const isIdentifier = propertyName[0] !== '"'
+  const varName = isIdentifier
     ? `${objName}.${propertyName}`
     : `${objName}[${propertyName}]`
-  const propertyPath = identifier
+  const propertyPath = isIdentifier
     ? `${path}.${propertyName}`
     : `${path}[${propertyName}]`
 
