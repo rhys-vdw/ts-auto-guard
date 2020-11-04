@@ -118,8 +118,11 @@ function getTypeGuardName(
   }
   if (options.exportAll) {
     const t = child.getType()
-    const symbol = t.getSymbol() || t.getAliasSymbol()
-    const name = symbol?.getName()
+    const symbols = [t.getSymbol(), t.getAliasSymbol()]
+    // type aliases have type __type sometimes
+    const name = symbols
+      .filter(x => x && x.getName() !== '__type')[0]
+      ?.getName()
     if (name) {
       return 'is' + name
     }
@@ -212,11 +215,7 @@ function arrayCondition(
   )
 
   if (conditions === null) {
-    reportError(
-      `No conditions for ${varName}, with array type ${arrayType.getText()}`
-    )
-    // TODO: Or `null`???
-    return 'true'
+    return `Array.isArray(${varName})`
   }
 
   // Bit of a hack, just check if the second argument is used before actually
@@ -549,8 +548,14 @@ function propertyConditions(
   const { debug } = options
   const propertyName = property.name
 
-  const varName = `${objName}.${propertyName}`
-  const propertyPath = `${path}.${propertyName}`
+  const isIdentifier = propertyName[0] !== '"'
+  const varName = isIdentifier
+    ? `${objName}.${propertyName}`
+    : `${objName}[${propertyName}]`
+  const propertyPath = isIdentifier
+    ? `${path}.${propertyName}`
+    : `${path}[${propertyName}]`
+
   const expectedType = property.type.getText()
   const conditions = typeConditions(
     varName,

@@ -172,6 +172,32 @@ testProcessProject(
 )
 
 testProcessProject(
+  'generates type guards for properties with spaces',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      "foo 1": number,
+      "bar 2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo 1"] === "number" &&
+            typeof obj["bar 2"] === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
   'correctly handles default export',
   {
     'test.ts': `
@@ -691,6 +717,67 @@ testProcessProject(
                 obj === Types.TheTypeSafe)
         )
     }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'generated type guards for arrays of any',
+  {
+    'test.ts': `
+      export interface Foo {
+        value: any[]
+      }
+      `,
+  },
+  {
+    'test.guard.ts': `
+      import { Foo } from "./test";
+      
+      export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Array.isArray(obj.value)
+          )
+      }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'generated type guards for nested arrays',
+  {
+    'test.ts': `
+      export type Foo = {
+        value: Array<{
+          value: Array<number>
+        }>
+      }
+      `,
+  },
+  {
+    'test.guard.ts': `
+        import { Foo } from "./test";
+        
+        export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+            return (
+                (obj !== null &&
+                    typeof obj === "object" ||
+                    typeof obj === "function") &&
+                Array.isArray(obj.value) &&
+                obj.value.every((e: any) =>
+                    (e !== null &&
+                        typeof e === "object" ||
+                        typeof e === "function") &&
+                    Array.isArray(e.value) &&
+                    e.value.every((e: any) =>
+                        typeof e === "number"
+                    )
+                )
+            )
+        }`,
   },
   { options: { exportAll: true } }
 )
