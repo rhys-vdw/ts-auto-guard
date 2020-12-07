@@ -781,3 +781,57 @@ testProcessProject(
   },
   { options: { exportAll: true } }
 )
+
+testProcessProject(
+  'generated type guards that returns errors',
+  {
+    'test.ts': `
+    export interface User {
+      admin: boolean;
+      email: string;
+      firstname: string;
+      lastname: string;
+      userId: string;
+    }
+      `,
+  },
+  {
+    'test.guard.ts': `
+   import { User } from "./test";
+   
+   function evaluate(
+       isCorrect: boolean,
+       varName: string,
+       expected: string,
+       actual: any,
+       regErrorArray: Error[]
+   ): boolean {
+       if (!isCorrect) {
+           regErrorArray.push(
+               new Error(
+                   \`\${varName} type mismatch, expected: \${expected}, found:\\n \${JSON.stringify(actual, null, 2)}\`
+               )
+           )
+       }
+       return isCorrect
+   }
+   
+   export function isUser(obj: any, argumentName: string = "user"): { isType: boolean, errors: Error[] } {
+       const regErrorArray = new Array<Error>()
+       return {
+           isType: (
+               (obj !== null &&
+                   typeof obj === "object" ||
+                   typeof obj === "function") &&
+               evaluate(typeof obj.admin === "boolean", \`\${argumentName}.admin\`, "boolean", obj.admin, regErrorArray) &&
+               evaluate(typeof obj.email === "string", \`\${argumentName}.email\`, "string", obj.email, regErrorArray) &&
+               evaluate(typeof obj.firstname === "string", \`\${argumentName}.firstname\`, "string", obj.firstname, regErrorArray) &&
+               evaluate(typeof obj.lastname === "string", \`\${argumentName}.lastname\`, "string", obj.lastname, regErrorArray) &&
+               evaluate(typeof obj.userId === "string", \`\${argumentName}.userId\`, "string", obj.userId, regErrorArray)
+           ), errors: regErrorArray
+       }
+   }
+   `,
+  },
+  { options: { exportAll: true, returnErrors: true } }
+)

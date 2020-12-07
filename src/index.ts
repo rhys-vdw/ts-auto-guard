@@ -545,7 +545,7 @@ function propertyConditions(
   records: readonly IRecord[],
   options: IProcessOptions
 ): string | null {
-  const { debug } = options
+  const { debug, returnErrors } = options
   const propertyName = property.name
 
   const isIdentifier = propertyName[0] !== '"'
@@ -574,6 +574,14 @@ function propertyConditions(
       `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
         expectedType
       )}, ${varName})`
+    )
+  }
+  if (returnErrors) {
+    return (
+      conditions &&
+      `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
+        expectedType
+      )}, ${varName}, regErrorArray)`
     )
   }
   return conditions
@@ -613,7 +621,7 @@ function generateTypeGuard(
   records: readonly IRecord[],
   options: IProcessOptions
 ): string {
-  const { debug, shortCircuitCondition } = options
+  const { debug, shortCircuitCondition, returnErrors } = options
   const typeName = typeDeclaration.getName()
   const defaultArgumentName = lowerFirst(typeName)
   const conditions = typeConditions(
@@ -628,15 +636,27 @@ function generateTypeGuard(
     options
   )
 
-  const secondArgument = debug
-    ? `argumentName: string = "${defaultArgumentName}"`
-    : `_argumentName?: string`
-  const signature = `export function ${functionName}(obj: any, ${secondArgument}): obj is ${typeName} {\n`
+  const secondArgument =
+    debug || returnErrors
+      ? `argumentName: string = "${defaultArgumentName}"`
+      : `_argumentName?: string`
+  let returnwrap
+  let signature
+  if (returnErrors) {
+    returnwrap = `return {\n isType: (\n${conditions}\n), errors: regErrorArray\n}\n}\n`
+    signature = `export function ${functionName}(obj: any, ${secondArgument}): { isType: boolean, errors: Error[] } {\n`
+  } else {
+    returnwrap = `return (\n${conditions}\n)\n}\n`
+    signature = `export function ${functionName}(obj: any, ${secondArgument}): obj is ${typeName} {\n`
+  }
+  const collectErrors = returnErrors
+    ? 'const regErrorArray = new Array<Error>()\n'
+    : ''
   const shortCircuit = shortCircuitCondition
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  return [signature, shortCircuit, `return (\n${conditions}\n)\n}\n`].join('')
+  return [signature, collectErrors, shortCircuit, returnwrap].join('')
 }
 
 // -- Process project --
@@ -679,6 +699,7 @@ export interface IProcessOptions {
   exportAll?: boolean
   shortCircuitCondition?: string
   debug?: boolean
+  returnErrors?: boolean
 }
 
 export interface IGenerateOptions {
@@ -697,6 +718,23 @@ const evaluateFunction = `function evaluate(
     console.error(
       \`\${varName} type mismatch, expected: \${expected}, found:\`,
       actual
+    )
+  }
+  return isCorrect
+}\n`
+
+const regErrorFunction = `function evaluate(
+  isCorrect: boolean,
+  varName: string,
+  expected: string,
+  actual: any,
+  regErrorArray: Error[]
+): boolean {
+  if (!isCorrect) {
+    regErrorArray.push(
+      new Error(
+        \`\${varName} type mismatch, expected: \${expected}, found:\\n \${JSON.stringify(actual, null, 2)}\`
+      )
     )
   }
   return isCorrect
@@ -785,6 +823,9 @@ export function processProject(
     if (functions.length > 0) {
       if (options.debug) {
         functions.unshift(evaluateFunction)
+      }
+      if (options.returnErrors) {
+        functions.unshift(regErrorFunction)
       }
 
       const outFile = project.createSourceFile(

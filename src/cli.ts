@@ -13,6 +13,7 @@ interface ICliOptions {
   project: string | undefined
   help: boolean
   debug: boolean
+  'return-errors': boolean
   'export-all': boolean
 }
 
@@ -57,6 +58,13 @@ const optionList = [
     name: 'debug',
     type: Boolean,
   },
+  {
+    alias: 'r',
+    description:
+      'Return errors in the form of object { isType: boolean, errors: Error[] }',
+    name: 'return-errors',
+    type: Boolean,
+  },
 ]
 
 const options: ICliOptions = defaults(
@@ -76,6 +84,7 @@ async function run() {
       processOptions: {
         debug: options.debug,
         exportAll: options['export-all'],
+        returnErrors: options['return-errors'],
         shortCircuitCondition: options.shortcircuit,
       },
       project,

@@ -77,14 +77,18 @@ Annotate interfaces in your project or pass. ts-auto-guard will generate guards 
 // my-project/Person.ts
 
 /** @see {isPerson} ts-auto-guard:type-guard */
-export interface Person { // !do not forget to export - only exported types are processed
+export interface Person {
+  // !do not forget to export - only exported types are processed
   name: string
   age?: number
   children: Person[]
 }
 ```
+
 ### Process all types
+
 Use `--export-all` parameter to process all exported types:
+
 ```
 $ ts-auto-guard --export-all
 ```
@@ -130,3 +134,25 @@ export function isPerson(obj: any): obj is Person {
 ```
 
 Using the `shortcircuit` option in combination with [uglify-js's `dead_code` and `global_defs` options](https://github.com/mishoo/UglifyJS2#compress-options) will let you omit the long and complicated checks from your production code.
+
+## Return errors
+
+Use --return-errors flag to output functions that will not acts as typesafe guards, but output a boolean value, that indicates if the input objects is of correct type and if not, then an array of appropriate errors (the same errors as given in the debug mode).
+Intended use is for example integrity testing non typesafe database outputs, that can then be printed to the screen.
+
+```
+$ ts-auto-guard --return-errors
+```
+
+```ts
+// Generic usage
+isObj(obj): { isType: boolean, errors: Error[] }
+
+const returnVar = isPerson({ name: "John", age: 20 })
+// returnVar.isType: true
+// returnVar.errors.length: 0
+
+const returnVar = isPerson({ name: 20, age: 20 })
+// returnVar.isType: false
+// returnVar.errors[0].message: "person.name type mismatch, expected: string, found: 20"
+```
