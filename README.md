@@ -137,7 +137,7 @@ Using the `shortcircuit` option in combination with [uglify-js's `dead_code` and
 
 ## Return errors
 
-Use --return-errors flag to output functions that will not acts as typesafe guards, but output a boolean value, that indicates if the input objects is of correct type and if not, then an array of appropriate errors (the same errors as given in the debug mode).
+Use --return-errors flag to create an extra function that will not acts as typesafe guards, but output an array of appropriate errors (the same errors as given in the debug mode).
 Intended use is for example integrity testing non typesafe database outputs, that can then be printed to the screen.
 
 ```
@@ -146,13 +146,11 @@ $ ts-auto-guard --return-errors
 
 ```ts
 // Generic usage
-isObj(obj): { isType: boolean, errors: Error[] }
+isObjErrorOut(obj): errors: Error[]
 
-const returnVar = isPerson({ name: "John", age: 20 })
-// returnVar.isType: true
-// returnVar.errors.length: 0
+const returnVar = isPersonErrorOut({ name: "John", age: 20 })
+// returnVar.length: 0
 
-const returnVar = isPerson({ name: 20, age: 20 })
-// returnVar.isType: false
-// returnVar.errors[0].message: "person.name type mismatch, expected: string, found: 20"
+const returnVar = isPersonErrorOut({ name: 20, age: 20 })
+// returnVar[0].message: "person.name type mismatch, expected: string, found: 20"
 ```
