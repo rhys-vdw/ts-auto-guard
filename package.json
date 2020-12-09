@@ -1,6 +1,6 @@
 {
   "name": "ts-auto-guard",
-  "version": "1.0.0-alpha.12",
+  "version": "1.0.0-alpha.13",
   "description": "Generate type guard functions from TypeScript interfaces",
   "homepage": "https://github.com/rhys-vdw/ts-auto-guard",
   "repository": "github:rhys-vdw/ts-auto-guard",
@@ -8,6 +8,7 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test && npm run lint && npm run format:check && tape -r ts-node/register tests/**/*.ts | tap-diff",
     "build": "tsc",
+    "watch": "tsc --watch",
     "prepare": "npm run build",
     "lint": "eslint .",
     "format": "eslint --fix --ext ts && prettier --write *.json *.js *.yml src/**/*.ts .github/**/*.yml",

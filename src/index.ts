@@ -148,6 +148,10 @@ function ne(a: string, b: string): string {
   return `${a} !== ${b}`
 }
 
+function nls(...statements: string[]): string {
+  return statements.join('\n')
+}
+
 function typeOf(varName: string, type: string): string {
   return eq(`typeof ${varName}`, `"${type}"`)
 }
@@ -160,7 +164,8 @@ function typeUnionConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
+  options: IProcessOptions,
+  calledByErrorOut: boolean
 ): string {
   const conditions: string[] = []
   conditions.push(
@@ -175,7 +180,8 @@ function typeUnionConditions(
           arrayDepth,
           true,
           records,
-          options
+          options,
+          calledByErrorOut
         )
       )
       .filter(v => v !== null) as string[])
@@ -195,10 +201,13 @@ function arrayCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
+  options: IProcessOptions,
+  calledByErrorOut: boolean
 ): string {
   if (arrayType.getText() === 'never') {
-    return ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
+    return calledByErrorOut
+      ? nls(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
+      : ands(`Array.isArray(${varName})`, eq(`${varName}.length`, '0'))
   }
   const indexIdentifier = `i${arrayDepth}`
   const elementPath = `${path}[\${${indexIdentifier}}]`
@@ -211,7 +220,8 @@ function arrayCondition(
     arrayDepth + 1,
     true,
     records,
-    options
+    options,
+    calledByErrorOut
   )
 
   if (conditions === null) {
@@ -223,17 +233,40 @@ function arrayCondition(
   const secondArg = conditions.includes(elementPath)
     ? `, ${indexIdentifier}: number`
     : ''
-  return ands(
-    `Array.isArray(${varName})`,
-    `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
-  )
+
+  const returnArgs = calledByErrorOut
+    ? `Array.isArray(${varName}), \`${path}\`, 
+        "array", ${varName}, regErrorArray`
+    : `Array.isArray(${varName}), \`${path}\`, 
+        "array", ${varName}`
+  const returnWrapped = calledByErrorOut
+    ? `regError(${returnArgs})`
+    : `evaluate(${returnArgs})`
+
+  return calledByErrorOut || options.debug
+    ? nls(
+        returnWrapped,
+        `${varName}?.every((e: any${secondArg}) =>\n${conditions}\n)`
+      )
+    : ands(
+        // Does this work in debug mode??
+        `Array.isArray(${varName})`,
+        `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
+      )
 }
 
-function objectTypeCondition(varName: string): string {
-  return ors(
-    ands(ne(varName, 'null'), typeOf(varName, 'object')),
-    typeOf(varName, 'function')
-  )
+function objectTypeCondition(
+  varName: string,
+  calledByErrorOut: boolean
+): string {
+  if (calledByErrorOut) {
+    return ''
+  } else {
+    return ors(
+      ands(ne(varName, 'null'), typeOf(varName, 'object')),
+      typeOf(varName, 'function')
+    )
+  }
 }
 
 function objectCondition(
@@ -244,8 +277,9 @@ function objectCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
-): string | null {
+  options: IProcessOptions,
+  calledByErrorOut: boolean
+): string[] | null {
   const conditions: string[] = []
 
   const symbol = type.getSymbol()
@@ -254,7 +288,7 @@ function objectCondition(
 
     // tslint:disable-next-line:no-console
     console.error(`Unable to get symbol for type ${type.getText()}`)
-    return typeOf(varName, 'object')
+    return [typeOf(varName, 'object')]
   }
 
   const declarations = symbol.getDeclarations()
@@ -283,14 +317,15 @@ function objectCondition(
         arrayDepth,
         true,
         records,
-        options
+        options,
+        calledByErrorOut
       )
       if (condition !== null) {
         conditions.push(condition)
       }
     })
     if (conditions.length === 0) {
-      conditions.push(objectTypeCondition(varName))
+      conditions.push(objectTypeCondition(varName, calledByErrorOut))
     }
     conditions.push(
       ...propertiesConditions(
@@ -303,11 +338,12 @@ function objectCondition(
         path,
         arrayDepth,
         records,
-        options
+        options,
+        calledByErrorOut
       )
     )
   } else {
-    conditions.push(objectTypeCondition(varName))
+    conditions.push(objectTypeCondition(varName, calledByErrorOut))
     // Get object literal properties...
     try {
       const properties = type.getProperties()
@@ -333,7 +369,8 @@ function objectCondition(
           path,
           arrayDepth,
           records,
-          options
+          options,
+          calledByErrorOut
         )
       )
     } catch (error) {
@@ -343,7 +380,7 @@ function objectCondition(
       }
     }
   }
-  return ands(...conditions)
+  return conditions
 }
 
 function tupleCondition(
@@ -354,8 +391,9 @@ function tupleCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
-): string {
+  options: IProcessOptions,
+  calledByErrorOut: boolean
+): string[] {
   const types = type.getTupleElements()
   const conditions = types.reduce(
     (acc, elementType, i) => {
@@ -368,7 +406,8 @@ function tupleCondition(
         arrayDepth,
         true,
         records,
-        options
+        options,
+        calledByErrorOut
       )
       if (condition !== null) {
         acc.push(condition)
@@ -377,7 +416,7 @@ function tupleCondition(
     },
     [`Array.isArray(${varName})`]
   )
-  return ands(...conditions)
+  return conditions
 }
 
 function literalCondition(
@@ -430,7 +469,8 @@ function typeConditions(
   arrayDepth: number,
   useGuard: boolean,
   records: readonly IRecord[],
-  options: IProcessOptions
+  options: IProcessOptions,
+  calledByErrorOut: boolean
 ): string | null {
   const reused = reusedCondition(type, records, varName)
   if (useGuard && reused) {
@@ -462,7 +502,8 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
   }
   if (type.isIntersection()) {
@@ -474,7 +515,8 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
   }
   if (type.isArray()) {
@@ -486,7 +528,8 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
   }
   if (isReadonlyArrayType(type)) {
@@ -498,7 +541,8 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
   }
   if (isClassType(type)) {
@@ -506,7 +550,7 @@ function typeConditions(
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
   if (type.isObject()) {
-    return objectCondition(
+    const oc = objectCondition(
       varName,
       type,
       addDependency,
@@ -514,11 +558,17 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
+    if (calledByErrorOut) {
+      return nls(...oc)
+    } else {
+      return ands(...oc)
+    }
   }
   if (type.isTuple()) {
-    return tupleCondition(
+    const tc = tupleCondition(
       varName,
       type,
       addDependency,
@@ -526,8 +576,14 @@ function typeConditions(
       path,
       arrayDepth,
       records,
-      options
+      options,
+      calledByErrorOut
     )
+    if (calledByErrorOut) {
+      return nls(...tc)
+    } else {
+      return ands(...tc)
+    }
   }
   if (type.isLiteral()) {
     return literalCondition(varName, type, addDependency)
@@ -543,15 +599,16 @@ function propertyConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
+  options: IProcessOptions,
+  calledByErrorOut: boolean
 ): string | null {
   const { debug } = options
   const propertyName = property.name
 
   const isIdentifier = propertyName[0] !== '"'
   const varName = isIdentifier
-    ? `${objName}.${propertyName}`
-    : `${objName}[${propertyName}]`
+    ? `${objName}?.${propertyName}`
+    : `${objName}?.[${propertyName}]`
   const propertyPath = isIdentifier
     ? `${path}.${propertyName}`
     : `${path}[${propertyName}]`
@@ -566,15 +623,27 @@ function propertyConditions(
     arrayDepth,
     true,
     records,
-    options
+    options,
+    calledByErrorOut
   )
-  if (debug) {
-    return (
-      conditions &&
-      `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
-        expectedType
-      )}, ${varName})`
-    )
+  if (property.type.isArray() && (debug || calledByErrorOut)) {
+    return conditions
+  } else {
+    if (debug) {
+      return (
+        conditions &&
+        `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
+          expectedType
+        )}, ${varName})`
+      )
+    } else if (calledByErrorOut) {
+      return (
+        conditions &&
+        `regError(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
+          expectedType
+        )}, ${varName}, regErrorArray)`
+      )
+    }
   }
   return conditions
 }
@@ -587,7 +656,8 @@ function propertiesConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
-  options: IProcessOptions
+  options: IProcessOptions,
+  calledByErrorOut: boolean
 ): string[] {
   return properties
     .map(prop =>
@@ -599,7 +669,8 @@ function propertiesConditions(
         path,
         arrayDepth,
         records,
-        options
+        options,
+        calledByErrorOut
       )
     )
     .filter(v => v !== null) as string[]
@@ -625,7 +696,8 @@ function generateTypeGuard(
     0,
     false,
     records,
-    options
+    options,
+    false
   )
 
   const secondArgument = debug
@@ -637,6 +709,42 @@ function generateTypeGuard(
     : ''
 
   return [signature, shortCircuit, `return (\n${conditions}\n)\n}\n`].join('')
+}
+
+function generateErrorReturn(
+  functionName: string,
+  typeDeclaration: Guardable,
+  addDependency: IAddDependency,
+  project: Project,
+  records: readonly IRecord[],
+  options: IProcessOptions
+): string {
+  const typeName = typeDeclaration.getName()
+  const defaultArgumentName = lowerFirst(typeName)
+  const conditions = typeConditions(
+    'obj',
+    typeDeclaration.getType(),
+    addDependency,
+    project,
+    '${argumentName}', // tslint:disable-line:no-invalid-template-strings
+    0,
+    false,
+    records,
+    options,
+    true
+  )
+
+  const secondArgument = `argumentName: string = "${defaultArgumentName}"`
+  const signature = `export function ${functionName}(obj: any, ${secondArgument}): Error[] {\n`
+  const errorArray = `const regErrorArray: Error[] = []\n`
+  const returnStatement = `return regErrorArray\n`
+
+  return [
+    signature,
+    errorArray,
+    `\n${conditions}\n`,
+    `${returnStatement}\n}`,
+  ].join('')
 }
 
 // -- Process project --
@@ -679,6 +787,7 @@ export interface IProcessOptions {
   exportAll?: boolean
   shortCircuitCondition?: string
   debug?: boolean
+  returnErrors?: boolean
 }
 
 export interface IGenerateOptions {
@@ -700,6 +809,22 @@ const evaluateFunction = `function evaluate(
     )
   }
   return isCorrect
+}\n`
+
+const regErrorFunction = `function regError(
+  isCorrect: boolean,
+  varName: string,
+  expected: string,
+  actual: any,
+  regErrorArray: Error[]
+): void {
+  if (!isCorrect) {
+    regErrorArray.push(
+      new Error(
+        \`\${varName} type mismatch, expected: \${expected}, found:\\n \${JSON.stringify(actual, null, 2)}\`
+      )
+    )
+  }
 }\n`
 
 export async function generate({
@@ -764,6 +889,18 @@ export function processProject(
     for (const typeDeclaration of allTypesDeclarations) {
       const typeGuardName = getTypeGuardName(typeDeclaration, options)
       if (typeGuardName !== null) {
+        if (options.returnErrors) {
+          functions.push(
+            generateErrorReturn(
+              typeGuardName + 'ErrorOut',
+              typeDeclaration,
+              addDependency,
+              project,
+              records,
+              options
+            )
+          )
+        }
         functions.push(
           generateTypeGuard(
             typeGuardName,
@@ -785,6 +922,9 @@ export function processProject(
     if (functions.length > 0) {
       if (options.debug) {
         functions.unshift(evaluateFunction)
+      }
+      if (options.returnErrors) {
+        functions.unshift(regErrorFunction)
       }
 
       const outFile = project.createSourceFile(
