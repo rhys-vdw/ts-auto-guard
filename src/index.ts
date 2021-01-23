@@ -6,7 +6,6 @@ import {
   ExportableNode,
   ImportDeclarationStructure,
   InterfaceDeclaration,
-  JSDocableNode,
   Node,
   Project,
   SourceFile,
@@ -14,7 +13,6 @@ import {
   Type,
   TypeAliasDeclaration,
 } from 'ts-morph'
-import ts from 'typescript'
 
 // -- Helpers --
 
@@ -97,7 +95,7 @@ function getReadonlyArrayType(type: Type): Type | undefined {
 }
 
 function getTypeGuardName(
-  child: JSDocableNode & Node<ts.Node>,
+  child: Guardable,
   options: IProcessOptions
 ): string | null {
   const jsDocs = child.getJsDocs()
@@ -548,7 +546,7 @@ function propertyConditions(
   const { debug } = options
   const propertyName = property.name
 
-  const isIdentifier = propertyName[0] !== '"'
+  const isIdentifier = propertyName[0] !== '"' && propertyName[0] !== "'"
   const varName = isIdentifier
     ? `${objName}.${propertyName}`
     : `${objName}[${propertyName}]`
