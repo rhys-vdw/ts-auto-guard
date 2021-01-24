@@ -41,8 +41,7 @@ const optionList = [
     type: Boolean,
   },
   {
-    description:
-      'Adds im',
+    description: 'Adds TypeGuard import and export to source file',
     name: 'import-guards',
     type: Boolean,
   },

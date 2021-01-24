@@ -679,7 +679,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 }
 
 export interface IProcessOptions {
-  exportAll?: boolean,
+  exportAll?: boolean
   importGuards?: boolean
   shortCircuitCondition?: string
   debug?: boolean
@@ -835,16 +835,28 @@ export function processProject(
       )
       if (options.importGuards) {
         const relativeOutPath =
-          './' + outFile.getFilePath().split('/').reverse()[0].replace(/\.(ts|tsx|d\.ts)$/, '')
+          './' +
+          outFile
+            .getFilePath()
+            .split('/')
+            .reverse()[0]
+            .replace(/\.(ts|tsx|d\.ts)$/, '')
         const importStatement = `import * as TypeGuards from "${relativeOutPath}";\n`
         const exportStatement = `export { TypeGuards };`
-        const { hasImport, hasExport, statements } = sourceFile.getStatements().reduce((reduced, node) => {
-          const nodeText = node.getText().replace(/\s{2,}/g, ' ')
-          reduced.hasImport ||= nodeText.includes('import * as TypeGuards')
-          reduced.hasExport ||= nodeText.includes('export { TypeGuards }')
-          reduced.statements += 1
-          return reduced;
-        }, {hasImport: false, hasExport: false, statements: 0})
+        const {
+          hasImport,
+          hasExport,
+          statements,
+        } = sourceFile.getStatements().reduce(
+          (reduced, node) => {
+            const nodeText = node.getText().replace(/\s{2,}/g, ' ')
+            reduced.hasImport ||= nodeText.includes('import * as TypeGuards')
+            reduced.hasExport ||= nodeText.includes('export { TypeGuards }')
+            reduced.statements += 1
+            return reduced
+          },
+          { hasImport: false, hasExport: false, statements: 0 }
+        )
         if (!hasImport) {
           sourceFile.insertStatements(0, importStatement)
         }
