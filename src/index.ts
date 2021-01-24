@@ -6,7 +6,6 @@ import {
   ExportableNode,
   ImportDeclarationStructure,
   InterfaceDeclaration,
-  JSDocableNode,
   Node,
   Project,
   SourceFile,
@@ -14,7 +13,6 @@ import {
   Type,
   TypeAliasDeclaration,
 } from 'ts-morph'
-import ts from 'typescript'
 
 // -- Helpers --
 
@@ -97,7 +95,7 @@ function getReadonlyArrayType(type: Type): Type | undefined {
 }
 
 function getTypeGuardName(
-  child: JSDocableNode & Node<ts.Node>,
+  child: Guardable,
   options: IProcessOptions
 ): string | null {
   const jsDocs = child.getJsDocs()
@@ -546,15 +544,20 @@ function propertyConditions(
   options: IProcessOptions
 ): string | null {
   const { debug } = options
+  const hasSpaces =
+    (property.name || '').includes(' ') &&
+    [`'`, `"`].every(quote => !(propertyName || '').includes(quote))
   const propertyName = property.name
 
-  const isIdentifier = propertyName[0] !== '"'
+  const isIdentifier =
+    propertyName[0] !== '"' && propertyName[0] !== "'" && !hasSpaces
+  const strippedName = propertyName.replace(/"/g, '')
   const varName = isIdentifier
     ? `${objName}.${propertyName}`
-    : `${objName}[${propertyName}]`
+    : `${objName}["${strippedName}"]`
   const propertyPath = isIdentifier
     ? `${path}.${propertyName}`
-    : `${path}[${propertyName}]`
+    : `${path}["${strippedName}"]`
 
   const expectedType = property.type.getText()
   const conditions = typeConditions(
