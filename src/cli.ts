@@ -14,6 +14,7 @@ interface ICliOptions {
   help: boolean
   debug: boolean
   'export-all': boolean
+  'import-guards': boolean
 }
 
 const optionList = [
@@ -37,6 +38,12 @@ const optionList = [
     description:
       'Generate checks for all exported types, even those not marked with comment',
     name: 'export-all',
+    type: Boolean,
+  },
+  {
+    description:
+      'Adds im',
+    name: 'import-guards',
     type: Boolean,
   },
   {
@@ -76,6 +83,7 @@ async function run() {
       processOptions: {
         debug: options.debug,
         exportAll: options['export-all'],
+        importGuards: options['import-guards'],
         shortCircuitCondition: options.shortcircuit,
       },
       project,
