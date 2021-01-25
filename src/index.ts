@@ -842,7 +842,7 @@ export function processProject(
             .split('/')
             .reverse()[0]
             .replace(/\.(ts|tsx|d\.ts)$/, '')
-        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";\n`
+        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
         const exportStatement = `export { ${options.importGuards} };`
         const {
           hasImport,
@@ -866,7 +866,10 @@ export function processProject(
           sourceFile.insertStatements(0, importStatement)
         }
         if (!hasExport && options.exportGuards) {
-          sourceFile.insertStatements(statements, exportStatement)
+          sourceFile.insertStatements(
+            !hasImport ? statements + 1 : statements,
+            exportStatement
+          )
         }
       }
 
