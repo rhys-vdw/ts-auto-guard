@@ -14,7 +14,8 @@ interface ICliOptions {
   help: boolean
   debug: boolean
   'export-all': boolean
-  'import-guards': boolean
+  'import-guards': string
+  'export-guards': boolean
 }
 
 const optionList = [
@@ -41,8 +42,16 @@ const optionList = [
     type: Boolean,
   },
   {
-    description: 'Adds TypeGuard import and export to source file',
+    description:
+      'Adds TypeGuard import to source file, to also export TypeGuard from source use with --import-guards. Optionally accepts a string to choose custom import alias.',
     name: 'import-guards',
+    typeLabel: '{underline TypeGuard}',
+    type: String,
+  },
+  {
+    description:
+      'Exports TypeGuard from source file, requires --import-guards to work.',
+    name: 'export-guards',
     type: Boolean,
   },
   {
@@ -76,6 +85,19 @@ async function run() {
     console.error('Could not find tsconfig')
     return
   }
+  if ('import-guards' in options) {
+    /** Checks if valid name passed as argument or replace with default if empty */
+    if (!options['import-guards']) {
+      options['import-guards'] = 'TypeGuards'
+    }
+    try {
+      eval(`const ${options['import-guards']} = true`)
+    } catch (error) {
+      console.log('Please pass a valid import alias')
+      throw error
+    }
+  }
+
   try {
     await generate({
       paths: options.paths,
@@ -83,6 +105,7 @@ async function run() {
         debug: options.debug,
         exportAll: options['export-all'],
         importGuards: options['import-guards'],
+        exportGuards: options['export-guards'],
         shortCircuitCondition: options.shortcircuit,
       },
       project,

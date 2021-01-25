@@ -680,7 +680,8 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 
 export interface IProcessOptions {
   exportAll?: boolean
-  importGuards?: boolean
+  importGuards?: string
+  exportGuards?: boolean
   shortCircuitCondition?: string
   debug?: boolean
 }
@@ -841,8 +842,8 @@ export function processProject(
             .split('/')
             .reverse()[0]
             .replace(/\.(ts|tsx|d\.ts)$/, '')
-        const importStatement = `import * as TypeGuards from "${relativeOutPath}";\n`
-        const exportStatement = `export { TypeGuards };`
+        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";\n`
+        const exportStatement = `export { ${options.importGuards} };`
         const {
           hasImport,
           hasExport,
@@ -850,8 +851,8 @@ export function processProject(
         } = sourceFile.getStatements().reduce(
           (reduced, node) => {
             const nodeText = node.getText().replace(/\s{2,}/g, ' ')
-            reduced.hasImport ||= nodeText.includes('import * as TypeGuards')
-            reduced.hasExport ||= nodeText.includes('export { TypeGuards }')
+            reduced.hasImport ||= nodeText.includes(`import * as ${options.importGuards}`)
+            reduced.hasExport ||= nodeText.includes(`export { ${options.importGuards} }`)
             reduced.statements += 1
             return reduced
           },
@@ -860,7 +861,7 @@ export function processProject(
         if (!hasImport) {
           sourceFile.insertStatements(0, importStatement)
         }
-        if (!hasExport) {
+        if (!hasExport && options.exportGuards) {
           sourceFile.insertStatements(statements, exportStatement)
         }
       }
