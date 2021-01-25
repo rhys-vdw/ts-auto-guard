@@ -811,9 +811,13 @@ testProcessProject(
 testProcessProject(
   'adds type guard import to source file and also exports',
   {
+    // NOTE: This file is not automatically cleaned up with `formatText` after
+    // being modified so it requires this funky indentation to ensure that it is
+    // conforms to ts-morph's formatting.
     'test.ts': `
-    /** @see {isEmpty} ts-auto-guard:type-guard */
-    export interface Empty {}`,
+/** @see {isEmpty} ts-auto-guard:type-guard */
+export interface Empty { }
+`,
   },
   {
     'test.ts': `
