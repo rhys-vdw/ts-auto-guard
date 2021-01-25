@@ -851,8 +851,12 @@ export function processProject(
         } = sourceFile.getStatements().reduce(
           (reduced, node) => {
             const nodeText = node.getText().replace(/\s{2,}/g, ' ')
-            reduced.hasImport ||= nodeText.includes(`import * as ${options.importGuards}`)
-            reduced.hasExport ||= nodeText.includes(`export { ${options.importGuards} }`)
+            reduced.hasImport ||= nodeText.includes(
+              `import * as ${options.importGuards}`
+            )
+            reduced.hasExport ||= nodeText.includes(
+              `export { ${options.importGuards} }`
+            )
             reduced.statements += 1
             return reduced
           },
