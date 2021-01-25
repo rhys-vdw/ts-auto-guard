@@ -843,7 +843,7 @@ export function processProject(
             .reverse()[0]
             .replace(/\.(ts|tsx|d\.ts)$/, '')
         const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
-        const exportStatement = `\nexport { ${options.importGuards} };`
+        const exportStatement = `export { ${options.importGuards} };`
         const {
           hasImport,
           hasExport,
@@ -871,7 +871,6 @@ export function processProject(
             exportStatement
           )
         }
-        sourceFile.formatText()
       }
 
       outFile.formatText()
