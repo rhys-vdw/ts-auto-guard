@@ -818,8 +818,10 @@ testProcessProject(
   {
     'test.ts': `
     import * as CustomGuardAlias from "./test.guard";
+
     /** @see {isEmpty} ts-auto-guard:type-guard */
     export interface Empty {}
+
     export { CustomGuardAlias };`,
     'test.guard.ts': `
     import { Empty } from "./test";
@@ -832,5 +834,32 @@ testProcessProject(
            )
     }`,
   },
-  { options: { importGuards: 'CustomGuardAlias' } }
+  { options: { importGuards: 'CustomGuardAlias'} }
+)
+
+testProcessProject(
+  'adds type guard import to source file and skips export',
+  {
+    'test.ts': `
+    /** @see {isEmpty} ts-auto-guard:type-guard */
+    export interface Empty {}`,
+  },
+  {
+    'test.ts': `
+    import * as CustomGuardAlias from "./test.guard";
+
+    /** @see {isEmpty} ts-auto-guard:type-guard */
+    export interface Empty {}`,
+    'test.guard.ts': `
+    import { Empty } from "./test";
+
+    export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
+        return (
+              (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function")
+           )
+    }`,
+  },
+  { options: { importGuards: 'CustomGuardAlias', preventExportImported: true } }
 )
