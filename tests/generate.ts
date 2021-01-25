@@ -822,6 +822,7 @@ export interface Empty { }
   {
     'test.ts': `
     import * as CustomGuardAlias from "./test.guard";
+
     /** @see {isEmpty} ts-auto-guard:type-guard */
     export interface Empty {}
     export { CustomGuardAlias };`,
