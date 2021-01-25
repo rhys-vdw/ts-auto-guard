@@ -681,7 +681,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 export interface IProcessOptions {
   exportAll?: boolean
   importGuards?: string
-  exportGuards?: boolean
+  preventExportImported?: boolean
   shortCircuitCondition?: string
   debug?: boolean
 }
@@ -865,7 +865,7 @@ export function processProject(
         if (!hasImport) {
           sourceFile.insertStatements(0, importStatement)
         }
-        if (!hasExport && options.exportGuards) {
+        if (!hasExport && !options.preventExportImported) {
           sourceFile.insertStatements(
             !hasImport ? statements + 1 : statements,
             exportStatement

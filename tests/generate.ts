@@ -832,5 +832,5 @@ testProcessProject(
            )
     }`,
   },
-  { options: { importGuards: 'CustomGuardAlias', exportGuards: true } }
+  { options: { importGuards: 'CustomGuardAlias' } }
 )

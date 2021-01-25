@@ -15,7 +15,7 @@ interface ICliOptions {
   debug: boolean
   'export-all': boolean
   'import-guards': string
-  'export-guards': boolean
+  'prevent-export-imported': boolean
 }
 
 const optionList = [
@@ -50,8 +50,8 @@ const optionList = [
   },
   {
     description:
-      'Exports TypeGuard from source file, requires --import-guards to work.',
-    name: 'export-guards',
+      'Overrides the default behavior for --import-guards by skipping export from source.',
+    name: 'prevent-export-imported',
     type: Boolean,
   },
   {
@@ -105,7 +105,7 @@ async function run() {
         debug: options.debug,
         exportAll: options['export-all'],
         importGuards: options['import-guards'],
-        exportGuards: options['export-guards'],
+        preventExportImported: options['prevent-export-imported'],
         shortCircuitCondition: options.shortcircuit,
       },
       project,
