@@ -807,3 +807,35 @@ testProcessProject(
   },
   { options: { exportAll: true } }
 )
+
+testProcessProject(
+  'adds type guard import to source file and also exports',
+  {
+    // NOTE: This file is not automatically cleaned up with `formatText` after
+    // being modified so it requires this funky indentation to ensure that it is
+    // conforms to ts-morph's formatting.
+    'test.ts': `
+/** @see {isEmpty} ts-auto-guard:type-guard */
+export interface Empty { }
+`,
+  },
+  {
+    'test.ts': `
+    import * as CustomGuardAlias from "./test.guard";
+
+    /** @see {isEmpty} ts-auto-guard:type-guard */
+    export interface Empty {}
+    export { CustomGuardAlias };`,
+    'test.guard.ts': `
+    import { Empty } from "./test";
+
+    export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
+        return (
+              (obj !== null &&
+              typeof obj === "object" ||
+              typeof obj === "function")
+           )
+    }`,
+  },
+  { options: { importGuards: 'CustomGuardAlias' } }
+)

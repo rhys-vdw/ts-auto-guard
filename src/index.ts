@@ -680,6 +680,8 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 
 export interface IProcessOptions {
   exportAll?: boolean
+  importGuards?: string
+  preventExportImported?: boolean
   shortCircuitCondition?: string
   debug?: boolean
 }
@@ -832,6 +834,44 @@ export function processProject(
           ` */`,
         ].join('\n')
       )
+      if (options.importGuards) {
+        const relativeOutPath =
+          './' +
+          outFile
+            .getFilePath()
+            .split('/')
+            .reverse()[0]
+            .replace(/\.(ts|tsx|d\.ts)$/, '')
+        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
+        const exportStatement = `export { ${options.importGuards} };`
+        const {
+          hasImport,
+          hasExport,
+          statements,
+        } = sourceFile.getStatements().reduce(
+          (reduced, node) => {
+            const nodeText = node.getText().replace(/\s{2,}/g, ' ')
+            reduced.hasImport ||= nodeText.includes(
+              `import * as ${options.importGuards}`
+            )
+            reduced.hasExport ||= nodeText.includes(
+              `export { ${options.importGuards} }`
+            )
+            reduced.statements += 1
+            return reduced
+          },
+          { hasImport: false, hasExport: false, statements: 0 }
+        )
+        if (!hasImport) {
+          sourceFile.insertStatements(0, importStatement)
+        }
+        if (!hasExport && !options.preventExportImported) {
+          sourceFile.insertStatements(
+            !hasImport ? statements + 1 : statements,
+            exportStatement
+          )
+        }
+      }
 
       outFile.formatText()
     }
