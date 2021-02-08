@@ -713,7 +713,7 @@ export async function generate({
   processOptions,
 }: Readonly<IGenerateOptions>): Promise<void> {
   const project = new Project({
-    addFilesFromTsConfig: paths.length === 0,
+    skipAddingFilesFromTsConfig: paths.length !== 0,
     tsConfigFilePath,
   })
   project.addSourceFilesAtPaths(paths)

@@ -6,7 +6,7 @@ import { IProcessOptions, processProject } from '../src'
 
 function createProject(): Project {
   return new Project({
-    addFilesFromTsConfig: false,
+    skipAddingFilesFromTsConfig: true,
     compilerOptions: { strict: true },
     useInMemoryFileSystem: true,
   })
@@ -172,7 +172,7 @@ testProcessProject(
 )
 
 testProcessProject(
-  'generates type guards for properties with spaces',
+  'generates type guards for INTERFACE properties with SPACES',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
@@ -192,6 +192,84 @@ testProcessProject(
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
             typeof obj["bar 2"] === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards for TYPE properties with SPACES',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      "foo 1": number,
+      "bar 2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo 1"] === "number" &&
+            typeof obj["bar 2"] === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards for INTERFACE properties with DASHES',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      "foo-1": number,
+      "bar-2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo-1"] === "number" &&
+            typeof obj["bar-2"] === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards for TYPE properties with DASHES',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      "foo-1": number,
+      "bar-2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo-1"] === "number" &&
+            typeof obj["bar-2"] === "string"
         )
     }`,
   }
