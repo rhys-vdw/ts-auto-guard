@@ -6,7 +6,7 @@ import { IProcessOptions, processProject } from '../src'
 
 function createProject(): Project {
   return new Project({
-    addFilesFromTsConfig: false,
+    skipAddingFilesFromTsConfig: true,
     compilerOptions: { strict: true },
     useInMemoryFileSystem: true,
   })
@@ -172,7 +172,7 @@ testProcessProject(
 )
 
 testProcessProject(
-  'generates type guards for properties with spaces',
+  'generates type guards for interface properties with spaces',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
@@ -196,6 +196,86 @@ testProcessProject(
     }`,
   }
 )
+
+testProcessProject(
+  'generates type guards for type properties with spaces',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      "foo 1": number,
+      "bar 2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo 1"] === "number" &&
+            typeof obj["bar 2"] === "string"
+        )
+    }`,
+  }
+)
+
+testProcessProject(
+  'generates type guards for interface properties with dashes',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      "foo-1": number,
+      "bar-2": string
+    }`,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null && 
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["foo-1"] === "number" &&
+            typeof obj["bar-2"] === "string"
+        )
+    }`,
+  }
+)
+
+// Commented out since this is a bug that should be fixed.
+
+// testProcessProject(
+//   'generates type guards for type properties with dashes',
+//   {
+//     'test.ts': `
+//     /** @see {isFoo} ts-auto-guard:type-guard */ /**
+//     export type Foo = {
+//       "foo-1": number,
+//       "bar-2": string
+//     }`,
+//   },
+//   {
+//     'test.guard.ts': `
+//     import { Foo } from "./test";
+
+//     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+//         return (
+//             (obj !== null &&
+//             typeof obj === "object" ||
+//             typeof obj === "function") &&
+//             typeof obj["foo-1"] === "number" &&
+//             typeof obj["bar-2"] === "string"
+//         )
+//     }`,
+//   }
+// )
 
 testProcessProject(
   'generates type guards for properties with spaces in types instead of interfaces',
