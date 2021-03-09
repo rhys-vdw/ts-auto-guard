@@ -16,6 +16,7 @@ interface ICliOptions {
   'export-all': boolean
   'import-guards': string
   'prevent-export-imported': boolean
+  'guard-file-name': string
 }
 
 const optionList = [
@@ -50,6 +51,13 @@ const optionList = [
   },
   {
     description:
+      'Allows customisation of the filename for the generated guards file',
+    name: 'guard-file-name',
+    type: String,
+    typeLabel: '{underline extension}',
+  },
+  {
+    description:
       'Overrides the default behavior for --import-guards by skipping export from source.',
     name: 'prevent-export-imported',
     type: Boolean,
@@ -76,7 +84,10 @@ const optionList = [
 
 const options: ICliOptions = defaults(
   commandLineArgs(optionList) as ICliOptions,
-  { paths: [] as ReadonlyArray<string>, help: false }
+  {
+    paths: [] as ReadonlyArray<string>,
+    help: false,
+  }
 )
 
 async function run() {
@@ -107,6 +118,7 @@ async function run() {
         importGuards: options['import-guards'],
         preventExportImported: options['prevent-export-imported'],
         shortCircuitCondition: options.shortcircuit,
+        guardFileName: options['guard-file-name'],
       },
       project,
     })

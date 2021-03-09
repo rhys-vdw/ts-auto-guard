@@ -131,6 +131,16 @@ export function isPerson(obj: any): obj is Person {
 
 Using the `shortcircuit` option in combination with [uglify-js's `dead_code` and `global_defs` options](https://github.com/mishoo/UglifyJS2#compress-options) will let you omit the long and complicated checks from your production code.
 
+## Change Guard File Name
+
+ts-auto-guard will create a `.guard.ts` file by default, but this can be overriden.
+
+```
+ts-auto-guard --guard-file-name="debug"
+```
+
+Will result in a guard file called `.debug.ts`.
+
 ## Add Import to Source File
 ts-auto-guard supports an `ìmport-guards` flag. This flag will add an import statement at the top and a named export at the bottom of the source files for the generated type guards. The `ìmport-guards` flag also optionally accepts a custom name for the import alias, if none is passed then `TypeGuards` is used as a default.
 

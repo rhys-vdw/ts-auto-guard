@@ -146,6 +146,133 @@ testProcessProject(
 )
 
 testProcessProject(
+  'allows the name of the guard file file to be specified',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: number,
+      bar: string
+    }`,
+  },
+  {
+    'test.debug.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null &&
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj.foo === "number" &&
+            typeof obj.bar === "string"
+        )
+    }`,
+  },
+  {
+    options: {
+      guardFileName: 'debug'
+    }
+  }
+)
+
+testProcessProject(
+  'show debug info',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: number,
+      bar: Bar
+    }
+    
+    /** @see {isBar} ts-auto-guard:type-guard */
+    export interface Bar {
+      bar: number,
+    }
+
+    `,
+  },
+  {
+    'test.guard.ts': `
+    import { Foo, Bar } from "./test";
+    
+    function evaluate(
+      isCorrect: boolean, 
+      varName: string, 
+      expected: string, 
+      actual: any
+    ): boolean {
+      if (!isCorrect) {
+        console.error(
+          \`\${varName} type mismatch, expected: \${expected}, found:\`,
+                      actual
+          )
+      }
+      return isCorrect
+    }
+    
+    export function isFoo(obj: any, argumentName: string = "foo"): obj is Foo {
+      return (
+        (obj !== null &&
+          typeof obj === "object" ||
+          typeof obj === "function") &&
+          evaluate(typeof obj.foo === "number", \`\${argumentName}.foo\`, "number", obj.foo) &&
+          evaluate(isBar(obj.bar) as boolean, \`\${argumentName}.bar\`, "import(\\"/test\\").Bar", obj.bar)
+        )
+    }
+
+    export function isBar(obj: any, argumentName: string = "bar"): obj is Bar {
+      return (
+        (obj !== null &&
+          typeof obj === "object" ||
+          typeof obj === "function") &&
+          evaluate(typeof obj.bar === "number", \`\${argumentName}.bar\`, "number", obj.bar)
+        )
+    }
+    `
+  },
+  {
+    options: {
+      debug: true,
+    }
+  }
+)
+
+testProcessProject(
+  'uses correct import file name if guard file is renamed',
+  {
+    'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      foo: number,
+      bar: string
+    }`,
+  },
+  {
+    'test.debug.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null &&
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj.foo === "number" &&
+            typeof obj.bar === "string"
+        )
+    }`,
+  },
+  {
+    options: {
+      guardFileName: 'debug',
+      importGuards: 'CustomGuardAlias',
+    },
+    skip: true
+  }
+)
+
+testProcessProject(
   'generates type guards for simple interface',
   {
     'test.ts': `
