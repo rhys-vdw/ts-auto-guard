@@ -158,6 +158,7 @@ function typeUnionConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string {
   const conditions: string[] = []
@@ -173,6 +174,7 @@ function typeUnionConditions(
           arrayDepth,
           true,
           records,
+          outFile,
           options
         )
       )
@@ -193,6 +195,7 @@ function arrayCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string {
   if (arrayType.getText() === 'never') {
@@ -209,6 +212,7 @@ function arrayCondition(
     arrayDepth + 1,
     true,
     records,
+    outFile,
     options
   )
 
@@ -242,6 +246,7 @@ function objectCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string | null {
   const conditions: string[] = []
@@ -281,6 +286,7 @@ function objectCondition(
         arrayDepth,
         true,
         records,
+        outFile,
         options
       )
       if (condition !== null) {
@@ -301,6 +307,7 @@ function objectCondition(
         path,
         arrayDepth,
         records,
+        outFile,
         options
       )
     )
@@ -331,6 +338,7 @@ function objectCondition(
           path,
           arrayDepth,
           records,
+          outFile,
           options
         )
       )
@@ -352,6 +360,7 @@ function tupleCondition(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string {
   const types = type.getTupleElements()
@@ -366,6 +375,7 @@ function tupleCondition(
         arrayDepth,
         true,
         records,
+        outFile,
         options
       )
       if (condition !== null) {
@@ -410,10 +420,19 @@ function literalCondition(
 function reusedCondition(
   type: Type,
   records: readonly IRecord[],
+  outFile: SourceFile,
+  addDependency: IAddDependency,
   varName: string
 ): string | null {
   const record = records.find(x => x.typeDeclaration.getType() === type)
   if (record) {
+    if (record.outFile !== outFile) {
+      addDependency(
+        record.outFile,
+        record.guardName,
+        record.typeDeclaration.isDefaultExport()
+      )
+    }
     return `${record.guardName}(${varName}) as boolean`
   }
   return null
@@ -428,9 +447,10 @@ function typeConditions(
   arrayDepth: number,
   useGuard: boolean,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string | null {
-  const reused = reusedCondition(type, records, varName)
+  const reused = reusedCondition(type, records, outFile, addDependency, varName)
   if (useGuard && reused) {
     return reused
   }
@@ -460,6 +480,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -472,6 +493,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -484,6 +506,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -496,6 +519,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -512,6 +536,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -524,6 +549,7 @@ function typeConditions(
       path,
       arrayDepth,
       records,
+      outFile,
       options
     )
   }
@@ -541,6 +567,7 @@ function propertyConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string | null {
   const { debug } = options
@@ -569,6 +596,7 @@ function propertyConditions(
     arrayDepth,
     true,
     records,
+    outFile,
     options
   )
   if (debug) {
@@ -590,6 +618,7 @@ function propertiesConditions(
   path: string,
   arrayDepth: number,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string[] {
   return properties
@@ -602,6 +631,7 @@ function propertiesConditions(
         path,
         arrayDepth,
         records,
+        outFile,
         options
       )
     )
@@ -614,6 +644,7 @@ function generateTypeGuard(
   addDependency: IAddDependency,
   project: Project,
   records: readonly IRecord[],
+  outFile: SourceFile,
   options: IProcessOptions
 ): string {
   const { debug, shortCircuitCondition } = options
@@ -628,6 +659,7 @@ function generateTypeGuard(
     0,
     false,
     records,
+    outFile,
     options
   )
 
@@ -726,6 +758,7 @@ type Guardable = InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration
 interface IRecord {
   guardName: string
   typeDeclaration: Guardable
+  outFile: SourceFile
 }
 
 export function processProject(
@@ -737,8 +770,33 @@ export function processProject(
     .getSourceFiles('./**/*.guard.ts')
     .forEach(sourceFile => sourceFile.delete())
 
+  const sourceFiles = project.getSourceFiles()
+  // Sort source files by dependencies - dependencies before dependants
+  const orderedSourceFiles: SourceFile[] = []
+  const orderSourceFileByDependencies = (sourceFile: SourceFile) => {
+    // Ignore if already added as a dependency of another
+    if (orderedSourceFiles.includes(sourceFile)) {
+      return
+    }
+    // Add all dependencies to the ordered list first (if they have beeen specified and have not already been added)
+    sourceFile.getImportDeclarations().forEach(importDeclaration => {
+      const importSourceFile = importDeclaration.getModuleSpecifierSourceFile()
+      if (
+        importSourceFile &&
+        sourceFiles.includes(importSourceFile) &&
+        !orderedSourceFiles.includes(importSourceFile)
+      ) {
+        orderSourceFileByDependencies(importSourceFile)
+      }
+    })
+    // Add this one to the ordered list
+    orderedSourceFiles.push(sourceFile)
+  }
+  sourceFiles.forEach(orderSourceFileByDependencies)
+
   // Generate new guard files.
-  project.getSourceFiles().forEach(sourceFile => {
+  const records: IRecord[] = []
+  orderedSourceFiles.forEach(sourceFile => {
     const dependencies: Dependencies = new Map()
     const addDependency = createAddDependency(dependencies)
 
@@ -757,12 +815,16 @@ export function processProject(
       }
     }
 
-    const records: IRecord[] = []
+    const outFile = project.createSourceFile(
+      outFilePath(sourceFile.getFilePath()),
+      '',
+      { overwrite: true }
+    )
 
     for (const typeDeclaration of allTypesDeclarations) {
       const typeGuardName = getTypeGuardName(typeDeclaration, options)
       if (typeGuardName !== null) {
-        records.push({ guardName: typeGuardName, typeDeclaration })
+        records.push({ guardName: typeGuardName, typeDeclaration, outFile })
       }
     }
 
@@ -776,6 +838,7 @@ export function processProject(
             addDependency,
             project,
             records,
+            outFile,
             options
           )
         )
@@ -792,11 +855,7 @@ export function processProject(
         functions.unshift(evaluateFunction)
       }
 
-      const outFile = project.createSourceFile(
-        outFilePath(sourceFile.getFilePath()),
-        functions.join('\n'),
-        { overwrite: true }
-      )
+      outFile.addStatements(functions.join('\n'))
 
       outFile.addImportDeclarations(
         Array.from(dependencies.entries()).reduce(
