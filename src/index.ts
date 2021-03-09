@@ -769,11 +769,18 @@ export function processProject(
   const sourceFiles = project.getSourceFiles()
   // Sort source files by dependencies - dependencies before dependants
   const orderedSourceFiles: SourceFile[] = []
-  const orderSourceFileByDependencies = (sourceFile: SourceFile) => {
-    // Ignore if already added as a dependency of another
-    if (orderedSourceFiles.includes(sourceFile)) {
+  const orderSourceFileByDependencies = (
+    sourceFile: SourceFile,
+    visitedFiles: SourceFile[] = []
+  ) => {
+    // Ignore if already added as a dependency of another, or if we hit a cyclical import
+    if (
+      orderedSourceFiles.includes(sourceFile) ||
+      visitedFiles.includes(sourceFile)
+    ) {
       return
     }
+    const childVisitedFiles = [...visitedFiles, sourceFile]
     // Add all dependencies to the ordered list first (if they have beeen specified and have not already been added)
     sourceFile.getImportDeclarations().forEach(importDeclaration => {
       const importSourceFile = importDeclaration.getModuleSpecifierSourceFile()
@@ -782,13 +789,13 @@ export function processProject(
         sourceFiles.includes(importSourceFile) &&
         !orderedSourceFiles.includes(importSourceFile)
       ) {
-        orderSourceFileByDependencies(importSourceFile)
+        orderSourceFileByDependencies(importSourceFile, childVisitedFiles)
       }
     })
     // Add this one to the ordered list
     orderedSourceFiles.push(sourceFile)
   }
-  sourceFiles.forEach(orderSourceFileByDependencies)
+  sourceFiles.forEach(sourceFile => orderSourceFileByDependencies(sourceFile))
 
   // Generate new guard files.
   const records: IRecord[] = []
