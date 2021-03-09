@@ -427,11 +427,7 @@ function reusedCondition(
   const record = records.find(x => x.typeDeclaration.getType() === type)
   if (record) {
     if (record.outFile !== outFile) {
-      addDependency(
-        record.outFile,
-        record.guardName,
-        record.typeDeclaration.isDefaultExport()
-      )
+      addDependency(record.outFile, record.guardName, false)
     }
     return `${record.guardName}(${varName}) as boolean`
   }
