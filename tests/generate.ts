@@ -930,7 +930,7 @@ testProcessProject(
       }
       `,
     'test-list.ts': `
-      import { TestType } from './test-type'
+      import { TestType } from './test'
 
       /** @see {isTestTypeList} ts-auto-guard:type-guard */
       export type TestTypeList = Array<TestType>
@@ -938,8 +938,8 @@ testProcessProject(
   },
   {
     'test-list.guard.ts': `
-      import { isTestType } from "./test-type.guard";
-      import { TestTypeList } from "./test-type-list";
+      import { isTestType } from "./test.guard";
+      import { TestTypeList } from "./test-list";
 
       export function isTestTypeList(obj: any, _argumentName?: string): obj is TestTypeList {
           return (
@@ -951,7 +951,7 @@ testProcessProject(
       }
       `,
       'test.guard.ts': `
-        import { TestType } from "./test-type";
+        import { TestType } from "./test";
 
         export function isTestType(obj: any, _argumentName?: string): obj is TestType {
             return (
