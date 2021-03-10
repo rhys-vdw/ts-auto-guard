@@ -161,7 +161,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj.foo === "number" &&
@@ -187,7 +187,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -213,7 +213,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -239,7 +239,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo-1"] === "number" &&
@@ -293,7 +293,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -668,10 +668,10 @@ testProcessProject(
     'test.ts': `
     /** @see {isPropertyValueType} ts-auto-guard:type-guard */
     export type PropertyValueType = {value: string};
-    
+
     /** @see {isPropertyName} ts-auto-guard:type-guard */
-    export type PropertyName = 'name' | 'value'; 
-    
+    export type PropertyName = 'name' | 'value';
+
     /** @see {isFoo} ts-auto-guard:type-guard */
     export type Foo = {
       [key in PropertyName]: PropertyValueType
@@ -680,7 +680,7 @@ testProcessProject(
   {
     'test.guard.ts': `
      import { PropertyValueType, PropertyName, Foo } from "./test";
-    
+
      export function isPropertyValueType(obj: any, _argumentName?: string): obj is PropertyValueType {
         return (
             (obj !== null &&
@@ -689,20 +689,20 @@ testProcessProject(
           typeof obj.value === "string"
           )
       }
-      
+
      export function isPropertyName(obj: any, _argumentName?: string): obj is PropertyName {
        return (
          (obj === "name" ||
            obj === "value")
        )
      }
-      
+
      export function isFoo(obj: any, _argumentName?: string): obj is Foo {
        return (
          (obj !== null &&
               typeof obj === "object" ||
               typeof obj === "function") &&
-         isPropertyValueType(obj.name) as boolean && 
+         isPropertyValueType(obj.name) as boolean &&
          isPropertyValueType(obj.value) as boolean
        )
      }
@@ -716,10 +716,10 @@ testProcessProject(
     'test.ts': `
    /** @see {isBranch1} ts-auto-guard:type-guard */
    export type Branch1 = Branch1[] | string;
-   
+
    /** @see {isBranch2} ts-auto-guard:type-guard */
    export type Branch2 = { branches: Branch2[] } | string;
-   
+
    /** @see {isBranch3} ts-auto-guard:type-guard */
    export type Branch3 = { branches: Branch3[] } | {branches: Branch3 }[] | string;
     `,
@@ -727,7 +727,7 @@ testProcessProject(
   {
     'test.guard.ts': `
     import { Branch1, Branch2, Branch3 } from "./test";
-    
+
     export function isBranch1(obj: any, _argumentName?: string): obj is Branch1 {
         return (
             (typeof obj === "string" ||
@@ -737,7 +737,7 @@ testProcessProject(
                 ))
         )
     }
-    
+
     export function isBranch2(obj: any, _argumentName?: string): obj is Branch2 {
         return (
             (typeof obj === "string" ||
@@ -750,7 +750,7 @@ testProcessProject(
                 ))
         )
     }
-    
+
     export function isBranch3(obj: any, _argumentName?: string): obj is Branch3 {
         return (
             (typeof obj === "string" ||
@@ -815,7 +815,7 @@ testProcessProject(
   {
     'test.guard.ts': `
     import { Types } from "./test";
-    
+
     export function isTypes(obj: any, _argumentName?: string): obj is Types {
         return (
             (obj === Types.TheGood ||
@@ -839,7 +839,7 @@ testProcessProject(
   {
     'test.guard.ts': `
       import { Foo } from "./test";
-      
+
       export function isFoo(obj: any, _argumentName?: string): obj is Foo {
           return (
               (obj !== null &&
@@ -866,7 +866,7 @@ testProcessProject(
   {
     'test.guard.ts': `
         import { Foo } from "./test";
-        
+
         export function isFoo(obj: any, _argumentName?: string): obj is Foo {
             return (
                 (obj !== null &&
@@ -918,4 +918,50 @@ export interface Empty { }
     }`,
   },
   { options: { importGuards: 'CustomGuardAlias' } }
+)
+
+testProcessProject(
+  'imports and uses generated type guard if the type is used in another file',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          someKey: string | number
+      }
+      `,
+    'test-list.ts': `
+      import { TestType } from './test-type'
+
+      /** @see {isTestTypeList} ts-auto-guard:type-guard */
+      export type TestTypeList = Array<TestType>
+      `
+  },
+  {
+    'test-list.guard.ts': `
+      import { isTestType } from "./test-type.guard";
+      import { TestTypeList } from "./test-type-list";
+
+      export function isTestTypeList(obj: any, _argumentName?: string): obj is TestTypeList {
+          return (
+              Array.isArray(obj) &&
+              obj.every((e: any) =>
+                  isTestType(e) as boolean
+              )
+          )
+      }
+      `,
+      'test.guard.ts': `
+        import { TestType } from "./test-type";
+
+        export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+            return (
+                (obj !== null &&
+                    typeof obj === "object" ||
+                    typeof obj === "function") &&
+                (typeof obj.someKey === "string" ||
+                    typeof obj.someKey === "number")
+            )
+        }
+        `
+  }
 )
