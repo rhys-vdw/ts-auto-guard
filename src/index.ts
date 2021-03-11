@@ -296,12 +296,13 @@ function objectCondition(
     if (conditions.length === 0) {
       conditions.push(objectTypeCondition(varName))
     }
+    const properties = declaration
+      .getProperties()
+      .map(p => ({ name: p.getName(), type: p.getType() }))
     conditions.push(
       ...propertiesConditions(
         varName,
-        declaration
-          .getProperties()
-          .map(p => ({ name: p.getName(), type: p.getType() })),
+        properties,
         addDependency,
         project,
         path,
@@ -311,13 +312,31 @@ function objectCondition(
         options
       )
     )
+    const indexSignatures = declaration
+      .getIndexSignatures()
+      .map(p => ({ keyType: p.getKeyType(), type: p.getReturnType() }))
+    if (indexSignatures.length) {
+      conditions.push(
+        indexSignaturesCondition(
+          varName,
+          indexSignatures,
+          properties,
+          addDependency,
+          project,
+          path,
+          arrayDepth,
+          records,
+          outFile,
+          options
+        )
+      )
+    }
   } else {
     conditions.push(objectTypeCondition(varName))
     // Get object literal properties...
     try {
       const properties = type.getProperties()
       const typeDeclarations = type.getSymbol()?.getDeclarations()
-
       const propertySignatures = properties.map(p => {
         const propertyDeclarations = p.getDeclarations()
         const typeAtLocation =
@@ -342,6 +361,26 @@ function objectCondition(
           options
         )
       )
+      const typeArguments = type.getAliasTypeArguments()
+      if (
+        type.getAliasSymbol()?.getName() === 'Record' &&
+        typeArguments.length === 2
+      ) {
+        conditions.push(
+          indexSignaturesCondition(
+            varName,
+            [{ keyType: typeArguments[0], type: typeArguments[1] }],
+            propertySignatures,
+            addDependency,
+            project,
+            path,
+            arrayDepth,
+            records,
+            outFile,
+            options
+          )
+        )
+      }
     } catch (error) {
       if (error instanceof TypeError) {
         // see https://github.com/dsherret/ts-simple-ast/issues/397
@@ -632,6 +671,108 @@ function propertiesConditions(
       )
     )
     .filter(v => v !== null) as string[]
+}
+
+function indexSignatureConditions(
+  objName: string,
+  keyName: string,
+  index: { keyType: Type; type: Type },
+  addDependency: IAddDependency,
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  records: readonly IRecord[],
+  outFile: SourceFile,
+  options: IProcessOptions
+): string | null {
+  const { debug } = options
+  const expectedType = index.type.getText()
+  const expectedKeyType = index.keyType.getText()
+  const conditions = typeConditions(
+    objName,
+    index.type,
+    addDependency,
+    project,
+    `path ${objName}`,
+    arrayDepth,
+    true,
+    records,
+    outFile,
+    options
+  )
+  const keyConditions = typeConditions(
+    keyName,
+    index.keyType,
+    addDependency,
+    project,
+    `path ${keyName}`,
+    arrayDepth,
+    true,
+    records,
+    outFile,
+    options
+  )
+  if (debug) {
+    const evaluation =
+      conditions &&
+      `evaluate(${conditions}, \`${path}["\${key}"]\`, ${JSON.stringify(
+        expectedType
+      )}, ${objName})`
+    const keyEvaluation =
+      keyConditions &&
+      `evaluate(${keyConditions}, \`${path} (key: "\${key}")\`, ${JSON.stringify(
+        expectedKeyType
+      )}, ${keyName})`
+    if (evaluation && keyEvaluation) {
+      return ands(evaluation, keyEvaluation)
+    }
+    return evaluation || keyEvaluation
+  }
+  if (conditions && keyConditions) {
+    return ands(conditions, keyConditions)
+  }
+  // If we don't have both try and return one, or null if neither
+  return conditions || keyConditions
+}
+
+function indexSignaturesCondition(
+  varName: string,
+  indexSignatures: ReadonlyArray<{ keyType: Type; type: Type }>,
+  properties: ReadonlyArray<{ name: string; type: Type }>,
+  addDependency: IAddDependency,
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  records: readonly IRecord[],
+  outFile: SourceFile,
+  options: IProcessOptions
+): string {
+  const conditions = ors(
+    ...(indexSignatures
+      .map(indexSignature =>
+        indexSignatureConditions(
+          'value',
+          'key',
+          indexSignature,
+          addDependency,
+          project,
+          path,
+          arrayDepth,
+          records,
+          outFile,
+          options
+        )
+      )
+      .filter(v => v !== null) as string[])
+  )
+  const staticKeysFilter = properties.length
+    ? `
+    .filter(([key]) => ![${properties
+      .map(({ name }) => `"${name}"`)
+      .join(',')}].includes(key))`
+    : ''
+  return `Object.entries(${varName})${staticKeysFilter}
+    .every(([key,value]) => ${conditions})`
 }
 
 function generateTypeGuard(

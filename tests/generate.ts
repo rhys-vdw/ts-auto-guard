@@ -965,3 +965,67 @@ testProcessProject(
         `
   }
 )
+
+testProcessProject(
+  'generates type guards for dynamic object keys, including when mixed with static keys',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          someKey: "some" | "key"
+          [index: string]: "dynamic" | "string"
+          [index: number]: "also-dynamic" | "number"
+      }
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              (obj.someKey === "some" ||
+                  obj.someKey === "key") &&
+              Object.entries(obj)
+                  .filter(([key]) => !["someKey"].includes(key))
+                  .every(([key, value]) => ((value === "string" ||
+                      value === "dynamic") &&
+                      typeof key === "string" ||
+                      (value === "number" ||
+                          value === "also-dynamic") &&
+                      typeof key === "number"))
+          )
+      }
+      `
+  }
+)
+
+testProcessProject(
+  'generates type guards for Record types',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export type TestType = Record<string, "dynamic" | "string">
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([key, value]) => ((value === "string" ||
+                      value === "dynamic") &&
+                      typeof key === "string"))
+          )
+      }
+      `
+  }
+)
