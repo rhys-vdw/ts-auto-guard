@@ -919,3 +919,49 @@ export interface Empty { }
   },
   { options: { importGuards: 'CustomGuardAlias' } }
 )
+
+testProcessProject(
+  'imports and uses generated type guard if the type is used in another file',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          someKey: string | number
+      }
+      `,
+    'test-list.ts': `
+      import { TestType } from './test'
+
+      /** @see {isTestTypeList} ts-auto-guard:type-guard */
+      export type TestTypeList = Array<TestType>
+      `
+  },
+  {
+    'test-list.guard.ts': `
+      import { isTestType } from "./test.guard";
+      import { TestTypeList } from "./test-list";
+
+      export function isTestTypeList(obj: any, _argumentName?: string): obj is TestTypeList {
+          return (
+              Array.isArray(obj) &&
+              obj.every((e: any) =>
+                  isTestType(e) as boolean
+              )
+          )
+      }
+      `,
+      'test.guard.ts': `
+        import { TestType } from "./test";
+
+        export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+            return (
+                (obj !== null &&
+                    typeof obj === "object" ||
+                    typeof obj === "function") &&
+                (typeof obj.someKey === "string" ||
+                    typeof obj.someKey === "number")
+            )
+        }
+        `
+  }
+)
