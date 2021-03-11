@@ -337,6 +337,7 @@ function objectCondition(
     try {
       const properties = type.getProperties()
       const typeDeclarations = type.getSymbol()?.getDeclarations()
+
       const propertySignatures = properties.map(p => {
         const propertyDeclarations = p.getDeclarations()
         const typeAtLocation =
@@ -361,6 +362,7 @@ function objectCondition(
           options
         )
       )
+
       const typeArguments = type.getAliasTypeArguments()
       if (
         type.getAliasSymbol()?.getName() === 'Record' &&
