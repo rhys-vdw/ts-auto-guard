@@ -715,14 +715,15 @@ function indexSignatureConditions(
     options
   )
   if (debug) {
+    const cleanKeyReplacer = '${key.toString().replace(/"/g, \'\\\\"\')}'
     const evaluation =
       conditions &&
-      `evaluate(${conditions}, \`${path}["\${key}"]\`, ${JSON.stringify(
+      `evaluate(${conditions}, \`${path}["${cleanKeyReplacer}"]\`, ${JSON.stringify(
         expectedType
       )}, ${objName})`
     const keyEvaluation =
       keyConditions &&
-      `evaluate(${keyConditions}, \`${path} (key: "\${key}")\`, ${JSON.stringify(
+      `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${JSON.stringify(
         expectedKeyType
       )}, ${keyName})`
     if (evaluation && keyEvaluation) {
