@@ -678,6 +678,8 @@ function propertiesConditions(
 function indexSignatureConditions(
   objName: string,
   keyName: string,
+  valueUsed: () => void,
+  keyUsed: () => void,
   index: { keyType: Type; type: Type },
   addDependency: IAddDependency,
   project: Project,
@@ -714,6 +716,12 @@ function indexSignatureConditions(
     outFile,
     options
   )
+  if (conditions) {
+    valueUsed()
+  }
+  if (keyConditions) {
+    keyUsed()
+  }
   if (debug) {
     const cleanKeyReplacer = '${key.toString().replace(/"/g, \'\\\\"\')}'
     const evaluation =
@@ -726,6 +734,9 @@ function indexSignatureConditions(
       `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${JSON.stringify(
         expectedKeyType
       )}, ${keyName})`
+    if (evaluation || keyEvaluation) {
+      keyUsed()
+    }
     if (evaluation && keyEvaluation) {
       return ands(evaluation, keyEvaluation)
     }
@@ -750,12 +761,22 @@ function indexSignaturesCondition(
   outFile: SourceFile,
   options: IProcessOptions
 ): string {
+  let valuePrefix = '_'
+  const valueUsed = () => {
+    valuePrefix = ''
+  }
+  let keyPrefix = '_'
+  const keyUsed = () => {
+    keyPrefix = ''
+  }
   const conditions = ors(
     ...(indexSignatures
       .map(indexSignature =>
         indexSignatureConditions(
           'value',
           'key',
+          valueUsed,
+          keyUsed,
           indexSignature,
           addDependency,
           project,
@@ -775,7 +796,7 @@ function indexSignaturesCondition(
       .join(',')}].includes(key))`
     : ''
   return `Object.entries(${varName})${staticKeysFilter}
-    .every(([key,value]) => ${conditions})`
+    .every(([${keyPrefix}key, ${valuePrefix}value]) => ${conditions})`
 }
 
 function generateTypeGuard(

@@ -1029,3 +1029,57 @@ testProcessProject(
       `
   }
 )
+
+testProcessProject(
+  'prefixes value with underscore if it goes unused',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          [index: string]: any
+      }
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([key, _value]) => (typeof key === "string"))
+          )
+      }
+      `
+  }
+)
+
+testProcessProject(
+  'prefixes key with underscore if it goes unused',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          [index: any]: string
+      }
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([_key, value]) => (typeof value === "string"))
+          )
+      }
+      `
+  }
+)
