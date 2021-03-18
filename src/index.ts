@@ -50,8 +50,11 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
   addDependency(sourceFile, name, isDefault)
 }
 
-function outFilePath(sourcePath: string) {
-  return sourcePath.replace(/\.(ts|tsx|d\.ts)$/, '.guard.ts')
+function outFilePath(sourcePath: string, options: IProcessOptions) {
+  return sourcePath.replace(
+    /\.(ts|tsx|d\.ts)$/,
+    `.${options.guardFileName ?? 'guard'}.ts`
+  )
 }
 
 // https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
@@ -623,7 +626,7 @@ function propertyConditions(
     ? `${path}.${propertyName}`
     : `${path}["${strippedName}"]`
 
-  const expectedType = property.type.getText()
+  let expectedType = property.type.getText()
   const conditions = typeConditions(
     varName,
     property.type,
@@ -637,6 +640,9 @@ function propertyConditions(
     options
   )
   if (debug) {
+    if (expectedType.startsWith('import')) {
+      expectedType = expectedType.replace(process.cwd(), '.')
+    }
     return (
       conditions &&
       `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
@@ -877,6 +883,7 @@ export interface IProcessOptions {
   preventExportImported?: boolean
   shortCircuitCondition?: string
   debug?: boolean
+  guardFileName?: string
 }
 
 export interface IGenerateOptions {
@@ -984,7 +991,7 @@ export function processProject(
     }
 
     const outFile = project.createSourceFile(
-      outFilePath(sourceFile.getFilePath()),
+      outFilePath(sourceFile.getFilePath(), options),
       '',
       { overwrite: true }
     )
