@@ -640,7 +640,7 @@ function propertyConditions(
     options
   )
   if (debug) {
-    if (expectedType.startsWith('import')) {
+    if (expectedType.indexOf('import') > -1) {
       expectedType = expectedType.replace(process.cwd(), '.')
     }
     return (

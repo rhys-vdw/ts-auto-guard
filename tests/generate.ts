@@ -179,11 +179,12 @@ testProcessProject(
 testProcessProject(
   'show debug info',
   {
-    'test.ts': `
+    [`${process.cwd()}/foo/bar/test.ts`]: `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export interface Foo {
       foo: number,
-      bar: Bar
+      bar: Bar,
+      bars: Array<Bar>
     }
     
     /** @see {isBar} ts-auto-guard:type-guard */
@@ -194,7 +195,7 @@ testProcessProject(
     `,
   },
   {
-    'test.guard.ts': `
+    [`${process.cwd()}/foo/bar/test.guard.ts`.slice(1)]: `
     import { Foo, Bar } from "./test";
     
     function evaluate(
@@ -218,7 +219,11 @@ testProcessProject(
           typeof obj === "object" ||
           typeof obj === "function") &&
           evaluate(typeof obj.foo === "number", \`\${argumentName}.foo\`, "number", obj.foo) &&
-          evaluate(isBar(obj.bar) as boolean, \`\${argumentName}.bar\`, "import(\\"/test\\").Bar", obj.bar)
+          evaluate(isBar(obj.bar) as boolean, \`\${argumentName}.bar\`, "import(\\"./foo/bar/test\\").Bar", obj.bar) &&
+          evaluate(Array.isArray(obj.bars) &&
+            obj.bars.every((e: any) =>
+              isBar(e) as boolean
+            ), \`\${argumentName}.bars\`, "import(\\"./foo/bar/test\\").Bar[]", obj.bars)
         )
     }
 
