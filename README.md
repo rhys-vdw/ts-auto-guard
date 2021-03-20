@@ -71,7 +71,7 @@ if (isPerson(person)) {
 
 ### Specify with annotation
 
-Annotate interfaces in your project or pass. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
+Annotate interfaces in your project. ts-auto-guard will generate guards only for interfaces with a `@see {name} ts-auto-guard:type-guard` JSDoc tag.
 
 ```ts
 // my-project/Person.ts
