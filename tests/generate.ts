@@ -1082,7 +1082,7 @@ testProcessProject(
           )
       }
       `,
-      'test.guard.ts': `
+    'test.guard.ts': `
         import { TestType } from "./test";
 
         export function isTestType(obj: any, _argumentName?: string): obj is TestType {
@@ -1214,4 +1214,42 @@ testProcessProject(
       }
       `
   }
+)
+
+testProcessProject(
+  'tpye that equals interface has different name',
+  {
+    'test.ts': `
+      export interface TestType {
+          [index: any]: string
+      }
+      export type SecondaryTestType = TestType
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType, SecondaryTestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([_key, value]) => (typeof value === "string"))
+          )
+      }
+
+      export function isSecondaryTestType(obj: any, _argumentName?: string): obj is SecondaryTestType {
+        return (
+            (obj !== null &&
+                typeof obj === "object" ||
+                typeof obj === "function") &&
+            Object.entries(obj)
+                .every(([_key, value]) => (typeof value === "string"))
+        )
+      }
+      `
+  },
+  { options: { exportAll: true } }
 )
