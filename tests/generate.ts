@@ -1021,6 +1021,44 @@ testProcessProject(
 )
 
 testProcessProject(
+  'type that is an alias to an interface has a different typeguard name',
+  {
+    'test.ts': `
+      export interface TestType {
+          [index: any]: string
+      }
+      export type SecondaryTestType = TestType
+      `
+  },
+  {
+    'test.guard.ts': `
+      import { TestType, SecondaryTestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([_key, value]) => (typeof value === "string"))
+          )
+      }
+
+      export function isSecondaryTestType(obj: any, _argumentName?: string): obj is SecondaryTestType {
+        return (
+            (obj !== null &&
+                typeof obj === "object" ||
+                typeof obj === "function") &&
+            Object.entries(obj)
+                .every(([_key, value]) => (typeof value === "string"))
+        )
+      }
+      `
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
   'adds type guard import to source file and also exports',
   {
     // NOTE: This file is not automatically cleaned up with `formatText` after
@@ -1082,7 +1120,7 @@ testProcessProject(
           )
       }
       `,
-      'test.guard.ts': `
+    'test.guard.ts': `
         import { TestType } from "./test";
 
         export function isTestType(obj: any, _argumentName?: string): obj is TestType {
