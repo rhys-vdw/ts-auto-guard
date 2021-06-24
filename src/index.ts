@@ -119,7 +119,7 @@ function getTypeGuardName(
   }
   if (options.exportAll) {
     const t = child.getType()
-    const symbols = [t.getSymbol(), t.getAliasSymbol()]
+    const symbols = [child, t.getSymbol(), t.getAliasSymbol()]
     // type aliases have type __type sometimes
     const name = symbols
       .filter(x => x && x.getName() !== '__type')[0]
