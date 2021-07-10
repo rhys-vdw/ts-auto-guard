@@ -171,8 +171,8 @@ testProcessProject(
   },
   {
     options: {
-      guardFileName: 'debug'
-    }
+      guardFileName: 'debug',
+    },
   }
 )
 
@@ -235,12 +235,12 @@ testProcessProject(
           evaluate(typeof obj.bar === "number", \`\${argumentName}.bar\`, "number", obj.bar)
         )
     }
-    `
+    `,
   },
   {
     options: {
       debug: true,
-    }
+    },
   }
 )
 
@@ -273,7 +273,7 @@ testProcessProject(
       guardFileName: 'debug',
       importGuards: 'CustomGuardAlias',
     },
-    skip: true
+    skip: true,
   }
 )
 
@@ -1028,7 +1028,7 @@ testProcessProject(
           [index: any]: string
       }
       export type SecondaryTestType = TestType
-      `
+      `,
   },
   {
     'test.guard.ts': `
@@ -1053,7 +1053,7 @@ testProcessProject(
                 .every(([_key, value]) => (typeof value === "string"))
         )
       }
-      `
+      `,
   },
   { options: { exportAll: true } }
 )
@@ -1104,7 +1104,7 @@ testProcessProject(
 
       /** @see {isTestTypeList} ts-auto-guard:type-guard */
       export type TestTypeList = Array<TestType>
-      `
+      `,
   },
   {
     'test-list.guard.ts': `
@@ -1132,7 +1132,7 @@ testProcessProject(
                     typeof obj.someKey === "number")
             )
         }
-        `
+        `,
   }
 )
 
@@ -1146,7 +1146,7 @@ testProcessProject(
           [index: string]: "dynamic" | "string"
           [index: number]: "also-dynamic" | "number"
       }
-      `
+      `,
   },
   {
     'test.guard.ts': `
@@ -1169,7 +1169,7 @@ testProcessProject(
                       typeof key === "number"))
           )
       }
-      `
+      `,
   }
 )
 
@@ -1179,7 +1179,7 @@ testProcessProject(
     'test.ts': `
       /** @see {isTestType} ts-auto-guard:type-guard */
       export type TestType = Record<string, "dynamic" | "string">
-      `
+      `,
   },
   {
     'test.guard.ts': `
@@ -1196,7 +1196,7 @@ testProcessProject(
                       typeof key === "string"))
           )
       }
-      `
+      `,
   }
 )
 
@@ -1208,7 +1208,7 @@ testProcessProject(
       export interface TestType {
           [index: string]: any
       }
-      `
+      `,
   },
   {
     'test.guard.ts': `
@@ -1223,7 +1223,7 @@ testProcessProject(
                   .every(([key, _value]) => (typeof key === "string"))
           )
       }
-      `
+      `,
   }
 )
 
@@ -1235,7 +1235,7 @@ testProcessProject(
       export interface TestType {
           [index: any]: string
       }
-      `
+      `,
   },
   {
     'test.guard.ts': `
@@ -1250,6 +1250,6 @@ testProcessProject(
                   .every(([_key, value]) => (typeof value === "string"))
           )
       }
-      `
+      `,
   }
 )
