@@ -19,7 +19,6 @@
   "author": "Rhys van der Waerden",
   "license": "MIT",
   "dependencies": {
-    "@ts-morph/common": "^0.7.3",
     "@types/command-line-args": "^5.0.0",
     "@types/command-line-usage": "^5.0.1",
     "@types/lodash": "^4.14.160",

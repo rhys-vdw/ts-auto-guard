@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-import { errors } from '@ts-morph/common'
+declare module 'ts-morph' {
+  // ts-morph does export the error, but it's missing from the typescript declarations
+  export const FileNotFoundError: typeof Error
+}
+import { FileNotFoundError } from 'ts-morph'
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
 import { defaults } from 'lodash'
@@ -124,7 +128,7 @@ async function run() {
     })
     console.log('Done!')
   } catch (error) {
-    if (error instanceof errors.FileNotFoundError) {
+    if (error instanceof FileNotFoundError) {
       console.error(error.message)
     } else {
       throw error
