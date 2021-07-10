@@ -1013,8 +1013,7 @@ export function processProject(
 
     const outFile = project.createSourceFile(
       outFilePath(sourceFile.getFilePath(), guardFileName),
-      '',
-      { overwrite: true }
+      ''
     )
 
     for (const typeDeclaration of allTypesDeclarations) {
