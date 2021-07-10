@@ -23,7 +23,7 @@ interface ITestOptions {
 function testProcessProject(
   typeDescription: string,
   input: { readonly [filename: string]: string },
-  output: { readonly [filename: string]: string },
+  output: { readonly [filename: string]: string | null },
   { skip, only, options, minifyOptions, throws }: ITestOptions = {}
 ) {
   const fn = skip ? test.skip : only ? test.only : test
@@ -49,14 +49,17 @@ function testProcessProject(
     })
 
     for (const sourceFile of project.getSourceFiles()) {
-      if (sourceFile.isSaved()) {
-        continue
-      }
       const filePath = sourceFile.getFilePath().slice(1)
       const expectedRaw = output[filePath]
       if (expectedRaw === undefined) {
         t.fail(`unexpected file ${filePath}`)
+      } else if (expectedRaw === null) {
+        // This file is expected, but must not have been changed
+        pull(expectedFilenames, filePath)
+        const sourceText = sourceFile.getFullText()
+        t.equal(sourceText, input[filePath], `${filePath} should not change`)
       } else {
+        // This is a new file
         pull(expectedFilenames, filePath)
         const expectedFile = project.createSourceFile(
           `${filePath}.expected`,
@@ -77,7 +80,7 @@ function testProcessProject(
         }
 
         const expectedText = expectedFile.getText()
-        t.equal(sourceText, expectedText, filePath)
+        t.equal(sourceText, expectedText, `${filePath} should match`)
       }
     }
     for (const filePath of expectedFilenames) {
@@ -122,6 +125,7 @@ testProcessProject(
     export interface Empty {}`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Empty } from "./test";
 
@@ -142,6 +146,7 @@ testProcessProject(
     export interface Empty {}`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Empty } from "./test";
 
@@ -164,6 +169,7 @@ testProcessProject(
     export type Bool = boolean`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Bool } from "./test";
 
@@ -186,6 +192,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.debug.ts': `
     import { Foo } from "./test";
 
@@ -206,10 +213,11 @@ testProcessProject(
   }
 )
 
+const PATH_PREFIX = process.cwd().slice(1) // Remove / from the beginning
 testProcessProject(
   'show debug info',
   {
-    [`${process.cwd()}/foo/bar/test.ts`]: `
+    [`${PATH_PREFIX}/foo/bar/test.ts`]: `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export interface Foo {
       foo: number,
@@ -225,7 +233,8 @@ testProcessProject(
     `,
   },
   {
-    [`${process.cwd()}/foo/bar/test.guard.ts`.slice(1)]: `
+    [`${PATH_PREFIX}/foo/bar/test.ts`]: null,
+    [`${PATH_PREFIX}/foo/bar/test.guard.ts`]: `
     import { Foo, Bar } from "./test";
     
     function evaluate(
@@ -285,6 +294,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.debug.ts': `
     import { Foo } from "./test";
 
@@ -318,6 +328,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -344,6 +355,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -370,6 +382,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -396,6 +409,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -450,6 +464,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -478,6 +493,7 @@ testProcessProject(
     export default Foo`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import Foo from "./test";
 
@@ -505,6 +521,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -538,6 +555,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -570,6 +588,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Bar, Foo } from "./test";
 
@@ -607,6 +626,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -637,6 +657,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Bar, Foo } from "./test";
 
@@ -672,6 +693,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -702,6 +724,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Bar, Foo } from "./test";
 
@@ -733,6 +756,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -760,6 +784,7 @@ testProcessProject(
     export type Foo = Pick<Bar, "foo">`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -784,6 +809,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Foo } from "./test";
 
@@ -814,6 +840,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `"use strict";function isFoo(o,s){return!0}exports.__esModule=!0,exports.isFoo=void 0,exports.isFoo=isFoo;`,
   },
   {
@@ -840,6 +867,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
      import { PropertyValueType, PropertyName, Foo } from "./test";
     
@@ -887,6 +915,7 @@ testProcessProject(
     `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Branch1, Branch2, Branch3 } from "./test";
     
@@ -943,6 +972,7 @@ testProcessProject(
     `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { X } from "./test";
 
@@ -975,6 +1005,7 @@ testProcessProject(
     }`,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
     import { Types } from "./test";
     
@@ -999,6 +1030,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { Foo } from "./test";
       
@@ -1026,6 +1058,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
         import { Foo } from "./test";
         
@@ -1061,6 +1094,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { TestType, SecondaryTestType } from "./test";
 
@@ -1137,6 +1171,8 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
+    'test-list.ts': null,
     'test-list.guard.ts': `
       import { isTestType } from "./test.guard";
       import { TestTypeList } from "./test-list";
@@ -1179,6 +1215,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
 
@@ -1212,6 +1249,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
 
@@ -1241,6 +1279,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
 
@@ -1268,6 +1307,7 @@ testProcessProject(
       `,
   },
   {
+    'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
 
@@ -1289,5 +1329,5 @@ testProcessProject(
   {
     'test.ts': '',
   },
-  {}
+  { 'test.ts': null }
 )
