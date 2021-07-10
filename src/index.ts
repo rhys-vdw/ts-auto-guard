@@ -14,6 +14,8 @@ import {
   TypeAliasDeclaration,
 } from 'ts-morph'
 
+const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
+
 // -- Helpers --
 
 function reportError(message: string, ...args: unknown[]) {
@@ -60,6 +62,16 @@ function outFilePath(sourcePath: string, guardFileName: string) {
       'Internal Error: sourcePath and outFilePath are identical: ' + outPath
     )
   return outPath
+}
+
+function deleteGuardFile(sourceFile: SourceFile) {
+  if (sourceFile.getFullText().indexOf(GENERATED_WARNING) >= 0) {
+    sourceFile.delete()
+  } else {
+    console.warn(
+      `${sourceFile.getFilePath()} is named like a guard file, but does not contain the generated header. Consider removing or renaming the file, or change the guardFileName setting.`
+    )
+  }
 }
 
 // https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
@@ -945,7 +957,7 @@ export function processProject(
   // Delete previously generated guard.
   project
     .getSourceFiles(`./**/*.${guardFileName}.ts`)
-    .forEach(sourceFile => sourceFile.delete())
+    .forEach(sourceFile => deleteGuardFile(sourceFile))
 
   const sourceFiles = project.getSourceFiles()
   // Sort source files by dependencies - dependencies before dependants
@@ -1073,7 +1085,7 @@ export function processProject(
         [
           `/*`,
           ` * Generated type guards for "${path}".`,
-          ` * WARNING: Do not manually change this file.`,
+          ` * ${GENERATED_WARNING}`,
           ` */`,
         ].join('\n')
       )
