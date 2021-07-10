@@ -50,11 +50,16 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
   addDependency(sourceFile, name, isDefault)
 }
 
-function outFilePath(sourcePath: string, options: IProcessOptions) {
-  return sourcePath.replace(
+function outFilePath(sourcePath: string, guardFileName: string) {
+  const outPath = sourcePath.replace(
     /\.(ts|tsx|d\.ts)$/,
-    `.${options.guardFileName ?? 'guard'}.ts`
+    `.${guardFileName}.ts`
   )
+  if (outPath === sourcePath)
+    throw new Error(
+      'Internal Error: sourcePath and outFilePath are identical: ' + outPath
+    )
+  return outPath
 }
 
 // https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
@@ -933,9 +938,13 @@ export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
 ): void {
+  const guardFileName = options.guardFileName || 'guard'
+  if (guardFileName.match(/[*/]/))
+    throw new Error('guardFileName must not contain special characters')
+
   // Delete previously generated guard.
   project
-    .getSourceFiles('./**/*.guard.ts')
+    .getSourceFiles(`./**/*.${guardFileName}.ts`)
     .forEach(sourceFile => sourceFile.delete())
 
   const sourceFiles = project.getSourceFiles()
@@ -991,7 +1000,7 @@ export function processProject(
     }
 
     const outFile = project.createSourceFile(
-      outFilePath(sourceFile.getFilePath(), options),
+      outFilePath(sourceFile.getFilePath(), guardFileName),
       '',
       { overwrite: true }
     )

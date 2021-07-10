@@ -17,13 +17,14 @@ interface ITestOptions {
   only?: boolean
   minifyOptions?: MinifyOptions
   options?: IProcessOptions
+  throws?: RegExp | typeof Error
 }
 
 function testProcessProject(
   typeDescription: string,
   input: { readonly [filename: string]: string },
   output: { readonly [filename: string]: string },
-  { skip, only, options, minifyOptions }: ITestOptions = {}
+  { skip, only, options, minifyOptions, throws }: ITestOptions = {}
 ) {
   const fn = skip ? test.skip : only ? test.only : test
   fn(typeDescription, t => {
@@ -34,6 +35,14 @@ function testProcessProject(
     project.saveSync()
 
     const expectedFilenames = Object.keys(output)
+
+    if (throws) {
+      t.throws(() => {
+        processProject(project, options)
+      }, throws)
+      t.end()
+      return
+    }
 
     t.doesNotThrow(() => {
       processProject(project, options)
@@ -82,6 +91,27 @@ testProcessProject(
   'removes existing .guard.ts files',
   { 'test.guard.ts': `alert("hello")` },
   {}
+)
+
+testProcessProject(
+  'removes correct .guard.ts files when guardFileName is set',
+  { 'test.foo.ts': `alert("hello")` },
+  {},
+  { options: { guardFileName: 'foo' } }
+)
+
+testProcessProject(
+  'rejects invalid guardFileNames: *',
+  {},
+  {},
+  { options: { guardFileName: 'f*o' }, throws: /guardFileName/ }
+)
+
+testProcessProject(
+  'rejects invalid guardFileNames: /',
+  {},
+  {},
+  { options: { guardFileName: 'f/o' }, throws: /guardFileName/ }
 )
 
 testProcessProject(
