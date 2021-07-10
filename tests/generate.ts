@@ -1283,3 +1283,11 @@ testProcessProject(
       `,
   }
 )
+
+testProcessProject(
+  'Does not generate empty guard files',
+  {
+    'test.ts': '',
+  },
+  {}
+)

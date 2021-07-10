@@ -1117,6 +1117,9 @@ export function processProject(
       }
 
       outFile.formatText()
+    } else {
+      // This guard file is empty. We did not know that until after the file was created, but at least we can clean it up.
+      outFile.delete()
     }
   })
 }
