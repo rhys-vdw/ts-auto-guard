@@ -7,7 +7,6 @@ declare module 'ts-morph' {
 import { FileNotFoundError } from 'ts-morph'
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
-import { defaults } from 'lodash'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 
@@ -86,13 +85,11 @@ const optionList = [
   },
 ]
 
-const options: ICliOptions = defaults(
-  commandLineArgs(optionList) as Partial<ICliOptions>,
-  {
-    paths: [] as ReadonlyArray<string>,
-    help: false,
-  }
-)
+const options: ICliOptions = {
+  paths: [] as ReadonlyArray<string>,
+  help: false,
+  ...(commandLineArgs(optionList) as Partial<ICliOptions>),
+}
 
 async function run() {
   const project = await TsConfig.resolve(process.cwd(), options.project)

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { flatMap, lowerFirst } from 'lodash'
 import {
   EnumDeclaration,
   ExportableNode,
@@ -22,6 +21,13 @@ function reportError(message: string, ...args: unknown[]) {
   console.error(`ERROR: ${message}`, ...args)
 }
 
+function lowerFirst(s: string): string {
+  const first_code_point = s.codePointAt(0)
+  if (first_code_point === undefined) return s
+  const first_letter = String.fromCodePoint(first_code_point)
+  return first_letter.toLowerCase() + s.substr(first_letter.length)
+}
+
 function findExportableNode(type: Type): (ExportableNode & Node) | null {
   const symbol = type.getSymbol()
   if (symbol === undefined) {
@@ -29,7 +35,9 @@ function findExportableNode(type: Type): (ExportableNode & Node) | null {
   }
 
   return (
-    flatMap(symbol.getDeclarations(), d => [d, ...d.getAncestors()])
+    symbol
+      .getDeclarations()
+      .reduce<Node[]>((acc, node) => [...acc, node, ...node.getAncestors()], [])
       .filter(Node.isExportableNode)
       .find(n => n.isExported()) || null
   )

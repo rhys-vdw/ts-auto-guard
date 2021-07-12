@@ -1,4 +1,3 @@
-import { each, pull } from 'lodash'
 import test from 'tape'
 import { Project } from 'ts-morph'
 import { minify, MinifyOptions } from 'uglify-js'
@@ -29,12 +28,12 @@ function testProcessProject(
   const fn = skip ? test.skip : only ? test.only : test
   fn(typeDescription, t => {
     const project = createProject()
-    each(input, (content, filePath) => {
+    Object.entries(input).forEach(([filePath, content]) => {
       project.createSourceFile(filePath, content)
     })
     project.saveSync()
 
-    const expectedFilenames = Object.keys(output)
+    const expectedFilenames = new Set(Object.keys(output))
 
     if (throws) {
       t.throws(() => {
@@ -55,12 +54,12 @@ function testProcessProject(
         t.fail(`unexpected file ${filePath}`)
       } else if (expectedRaw === null) {
         // This file is expected, but must not have been changed
-        pull(expectedFilenames, filePath)
+        expectedFilenames.delete(filePath)
         const sourceText = sourceFile.getFullText()
         t.equal(sourceText, input[filePath], `${filePath} should not change`)
       } else {
         // This is a new file
-        pull(expectedFilenames, filePath)
+        expectedFilenames.delete(filePath)
         const expectedFile = project.createSourceFile(
           `${filePath}.expected`,
           expectedRaw
