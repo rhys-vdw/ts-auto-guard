@@ -10,8 +10,8 @@
     "build": "tsc",
     "prepare": "npm run build",
     "lint": "eslint .",
-    "format": "eslint --fix --ext ts && prettier --write *.json *.js *.yml src/**/*.ts .github/**/*.yml",
-    "format:check": "prettier --list-different *.json *.js *.yml src/**/*.ts .github/**/*.yml"
+    "format": "eslint --fix --ext ts && prettier --write *.json *.js *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml",
+    "format:check": "prettier --list-different *.json *.js *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
@@ -19,13 +19,10 @@
   "author": "Rhys van der Waerden",
   "license": "MIT",
   "dependencies": {
-    "@ts-morph/common": "^0.7.3",
     "@types/command-line-args": "^5.0.0",
     "@types/command-line-usage": "^5.0.1",
-    "@types/lodash": "^4.14.160",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
-    "lodash": "^4.17.20",
     "ts-morph": "^9.1.0",
     "tsconfig": "^7.0.0"
   },

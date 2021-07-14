@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 
-import { errors } from '@ts-morph/common'
+declare module 'ts-morph' {
+  // ts-morph does export the error, but it's missing from the typescript declarations
+  export const FileNotFoundError: typeof Error
+}
+import { FileNotFoundError } from 'ts-morph'
 import commandLineArgs from 'command-line-args'
 import commandLineUsage from 'command-line-usage'
-import { defaults } from 'lodash'
 import * as TsConfig from 'tsconfig'
 import { generate } from './index'
 
 interface ICliOptions {
-  shortcircuit: string | undefined
+  shortcircuit?: string
   paths: ReadonlyArray<string>
-  project: string | undefined
+  project?: string
   help: boolean
-  debug: boolean
-  'export-all': boolean
-  'import-guards': string
-  'prevent-export-imported': boolean
-  'guard-file-name': string
+  debug?: boolean
+  'export-all'?: boolean
+  'import-guards'?: string
+  'prevent-export-imported'?: boolean
+  'guard-file-name'?: string
 }
 
 const optionList = [
@@ -82,13 +85,11 @@ const optionList = [
   },
 ]
 
-const options: ICliOptions = defaults(
-  commandLineArgs(optionList) as ICliOptions,
-  {
-    paths: [] as ReadonlyArray<string>,
-    help: false,
-  }
-)
+const options: ICliOptions = {
+  paths: [] as ReadonlyArray<string>,
+  help: false,
+  ...(commandLineArgs(optionList) as Partial<ICliOptions>),
+}
 
 async function run() {
   const project = await TsConfig.resolve(process.cwd(), options.project)
@@ -124,7 +125,7 @@ async function run() {
     })
     console.log('Done!')
   } catch (error) {
-    if (error instanceof errors.FileNotFoundError) {
+    if (error instanceof FileNotFoundError) {
       console.error(error.message)
     } else {
       throw error

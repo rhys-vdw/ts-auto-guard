@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { flatMap, lowerFirst } from 'lodash'
 import {
   EnumDeclaration,
   ExportableNode,
@@ -14,10 +13,19 @@ import {
   TypeAliasDeclaration,
 } from 'ts-morph'
 
+const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
+
 // -- Helpers --
 
 function reportError(message: string, ...args: unknown[]) {
   console.error(`ERROR: ${message}`, ...args)
+}
+
+function lowerFirst(s: string): string {
+  const first_code_point = s.codePointAt(0)
+  if (first_code_point === undefined) return s
+  const first_letter = String.fromCodePoint(first_code_point)
+  return first_letter.toLowerCase() + s.substr(first_letter.length)
 }
 
 function findExportableNode(type: Type): (ExportableNode & Node) | null {
@@ -27,7 +35,9 @@ function findExportableNode(type: Type): (ExportableNode & Node) | null {
   }
 
   return (
-    flatMap(symbol.getDeclarations(), d => [d, ...d.getAncestors()])
+    symbol
+      .getDeclarations()
+      .reduce<Node[]>((acc, node) => [...acc, node, ...node.getAncestors()], [])
       .filter(Node.isExportableNode)
       .find(n => n.isExported()) || null
   )
@@ -50,11 +60,26 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
   addDependency(sourceFile, name, isDefault)
 }
 
-function outFilePath(sourcePath: string, options: IProcessOptions) {
-  return sourcePath.replace(
+function outFilePath(sourcePath: string, guardFileName: string) {
+  const outPath = sourcePath.replace(
     /\.(ts|tsx|d\.ts)$/,
-    `.${options.guardFileName ?? 'guard'}.ts`
+    `.${guardFileName}.ts`
   )
+  if (outPath === sourcePath)
+    throw new Error(
+      'Internal Error: sourcePath and outFilePath are identical: ' + outPath
+    )
+  return outPath
+}
+
+function deleteGuardFile(sourceFile: SourceFile) {
+  if (sourceFile.getFullText().indexOf(GENERATED_WARNING) >= 0) {
+    sourceFile.delete()
+  } else {
+    console.warn(
+      `${sourceFile.getFilePath()} is named like a guard file, but does not contain the generated header. Consider removing or renaming the file, or change the guardFileName setting.`
+    )
+  }
 }
 
 // https://github.com/dsherret/ts-simple-ast/issues/108#issuecomment-342665874
@@ -933,10 +958,14 @@ export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
 ): void {
+  const guardFileName = options.guardFileName || 'guard'
+  if (guardFileName.match(/[*/]/))
+    throw new Error('guardFileName must not contain special characters')
+
   // Delete previously generated guard.
   project
-    .getSourceFiles('./**/*.guard.ts')
-    .forEach(sourceFile => sourceFile.delete())
+    .getSourceFiles(`./**/*.${guardFileName}.ts`)
+    .forEach(sourceFile => deleteGuardFile(sourceFile))
 
   const sourceFiles = project.getSourceFiles()
   // Sort source files by dependencies - dependencies before dependants
@@ -991,9 +1020,8 @@ export function processProject(
     }
 
     const outFile = project.createSourceFile(
-      outFilePath(sourceFile.getFilePath(), options),
-      '',
-      { overwrite: true }
+      outFilePath(sourceFile.getFilePath(), guardFileName),
+      ''
     )
 
     for (const typeDeclaration of allTypesDeclarations) {
@@ -1064,7 +1092,7 @@ export function processProject(
         [
           `/*`,
           ` * Generated type guards for "${path}".`,
-          ` * WARNING: Do not manually change this file.`,
+          ` * ${GENERATED_WARNING}`,
           ` */`,
         ].join('\n')
       )
@@ -1108,6 +1136,9 @@ export function processProject(
       }
 
       outFile.formatText()
+    } else {
+      // This guard file is empty. We did not know that until after the file was created, but at least we can clean it up.
+      outFile.delete()
     }
   })
 }
