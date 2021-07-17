@@ -522,7 +522,7 @@ function typeConditions(
   if (type.isNull()) {
     return eq(varName, 'null')
   }
-  if (type.getText() === 'any') {
+  if (type.getText() === 'any' || type.getText() === 'unknown') {
     return null
   }
   if (type.getText() === 'never') {
