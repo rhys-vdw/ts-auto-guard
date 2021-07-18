@@ -1341,3 +1341,57 @@ testProcessProject(
   },
   { 'test.ts': null }
 )
+
+testProcessProject(
+  'Deals with unknown type as it would any',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          [index: string]: unknown
+      }
+      `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              Object.entries(obj)
+                  .every(([key, _value]) => (typeof key === "string"))
+          )
+      }
+      `,
+  }
+)
+
+testProcessProject(
+  'Deals with unknown type as it would any',
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+          test: unknown
+      }
+      `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+      import { TestType } from "./test";
+
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function")
+          )
+      }
+      `,
+  }
+)
