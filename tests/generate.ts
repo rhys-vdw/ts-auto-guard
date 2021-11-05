@@ -1395,3 +1395,33 @@ testProcessProject(
       `,
   }
 )
+
+testProcessProject(
+  'Check if property is indeed a function for any function type.',
+  // should also emit a warning about how it is not possible to check function type at runtime.
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+        test: (() => void);
+      }
+    `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+      import { TestType } from "./test";
+      
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              (obj.test !== null &&
+                  typeof obj.test === "function")
+          )
+      }
+    `,
+  },
+  { only: true }
+)
