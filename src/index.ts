@@ -259,11 +259,13 @@ function arrayCondition(
   )
 }
 
-function objectTypeCondition(varName: string): string {
-  return ors(
-    ands(ne(varName, 'null'), typeOf(varName, 'object')),
-    typeOf(varName, 'function')
-  )
+function objectTypeCondition(varName: string, callable: boolean): string {
+  return callable
+    ? typeOf(varName, 'function')
+    : ors(
+        ands(ne(varName, 'null'), typeOf(varName, 'object')),
+        typeOf(varName, 'function')
+      )
 }
 
 function objectCondition(
@@ -298,6 +300,8 @@ function objectCondition(
     return null
   }
 
+  const callable = type.getCallSignatures().length !== 0
+
   if (type.isInterface()) {
     if (!Node.isInterfaceDeclaration(declaration)) {
       throw new TypeError(
@@ -322,11 +326,14 @@ function objectCondition(
       }
     })
     if (conditions.length === 0) {
-      conditions.push(objectTypeCondition(varName))
+      conditions.push(objectTypeCondition(varName, callable))
     }
-    const properties = declaration
-      .getProperties()
-      .map(p => ({ name: p.getName(), type: p.getType() }))
+
+    // getProperties does not include methods like `foo(): void`
+    const properties = [
+      ...declaration.getProperties(),
+      ...declaration.getMethods(),
+    ].map(p => ({ name: p.getName(), type: p.getType() }))
     conditions.push(
       ...propertiesConditions(
         varName,
@@ -360,7 +367,7 @@ function objectCondition(
       )
     }
   } else {
-    conditions.push(objectTypeCondition(varName))
+    conditions.push(objectTypeCondition(varName, callable))
     // Get object literal properties...
     try {
       const properties = type.getProperties()
