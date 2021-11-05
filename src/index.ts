@@ -302,6 +302,25 @@ function objectCondition(
 
   const callable = type.getCallSignatures().length !== 0
 
+  if (callable) {
+    // emit warning
+    const suppressComment = 'ts-auto-guard-suppress function-type'
+    const commentsBefore = declaration.getLeadingCommentRanges()
+    const commentBefore = commentsBefore[commentsBefore.length - 1]
+    if (
+      commentBefore === undefined ||
+      !commentBefore.getText().includes(suppressComment)
+    ) {
+      console.warn(
+        `
+It seems that ${varName} has a function type.
+Note that it is impossible to check if a function has the correct signiture and return type at runtime.
+To disable this warning, put comment "${suppressComment}" before the declaration.
+`
+      )
+    }
+  }
+
   if (type.isInterface()) {
     if (!Node.isInterfaceDeclaration(declaration)) {
       throw new TypeError(
