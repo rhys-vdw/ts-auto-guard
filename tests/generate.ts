@@ -1113,7 +1113,7 @@ testProcessProject(
               (obj !== null &&
                   typeof obj === "object" ||
                   typeof obj === "function") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .every(([_key, value]) => (typeof value === "string"))
           )
       }
@@ -1123,7 +1123,7 @@ testProcessProject(
             (obj !== null &&
                 typeof obj === "object" ||
                 typeof obj === "function") &&
-            Object.entries(obj)
+            Object.entries<any>(obj)
                 .every(([_key, value]) => (typeof value === "string"))
         )
       }
@@ -1236,7 +1236,7 @@ testProcessProject(
                   typeof obj === "function") &&
               (obj.someKey === "some" ||
                   obj.someKey === "key") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .filter(([key]) => !["someKey"].includes(key))
                   .every(([key, value]) => ((value === "string" ||
                       value === "dynamic") &&
@@ -1268,7 +1268,7 @@ testProcessProject(
               (obj !== null &&
                   typeof obj === "object" ||
                   typeof obj === "function") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .every(([key, value]) => ((value === "string" ||
                       value === "dynamic") &&
                       typeof key === "string"))
@@ -1298,7 +1298,7 @@ testProcessProject(
               (obj !== null &&
                   typeof obj === "object" ||
                   typeof obj === "function") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .every(([key, _value]) => (typeof key === "string"))
           )
       }
@@ -1326,7 +1326,7 @@ testProcessProject(
               (obj !== null &&
                   typeof obj === "object" ||
                   typeof obj === "function") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .every(([_key, value]) => (typeof value === "string"))
           )
       }
@@ -1362,7 +1362,7 @@ testProcessProject(
               (obj !== null &&
                   typeof obj === "object" ||
                   typeof obj === "function") &&
-              Object.entries(obj)
+              Object.entries<any>(obj)
                   .every(([key, _value]) => (typeof key === "string"))
           )
       }

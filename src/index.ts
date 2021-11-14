@@ -852,7 +852,7 @@ function indexSignaturesCondition(
       .map(({ name }) => `"${name}"`)
       .join(',')}].includes(key))`
     : ''
-  return `Object.entries(${varName})${staticKeysFilter}
+  return `Object.entries<any>(${varName})${staticKeysFilter}
     .every(([${keyPrefix}key, ${valuePrefix}value]) => ${conditions})`
 }
 
