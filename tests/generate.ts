@@ -1395,3 +1395,68 @@ testProcessProject(
       `,
   }
 )
+
+testProcessProject(
+  'Check if any callable properties is a function',
+  // should also emit a warning about how it is not possible to check function type at runtime.
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+        test: (() => void)
+        // ts-auto-guard-suppress function-type
+        test2(someArg: number): boolean
+        // some other comments
+        test3: {
+          (someArg: string): number
+          test3Arg: number;
+        }
+      }
+    `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+      import { TestType } from "./test";
+      
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              typeof obj.test === "function" &&
+              typeof obj.test3 === "function" &&
+              typeof obj.test3.test3Arg === "number" &&
+              typeof obj.test2 === "function"
+          )
+      }
+    `,
+  }
+)
+
+testProcessProject(
+  'Check if callable interface is a function',
+  // should also emit a warning about how it is not possible to check function type at runtime.
+  {
+    'test.ts': `
+      /** @see {isTestType} ts-auto-guard:type-guard */
+      export interface TestType {
+        (someArg: string): number
+        arg: number;
+      }
+    `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+      import { TestType } from "./test";
+      
+      export function isTestType(obj: any, _argumentName?: string): obj is TestType {
+          return (
+              typeof obj === "function" &&
+              typeof obj.arg === "number"
+          )
+      }
+    `,
+  }
+)
