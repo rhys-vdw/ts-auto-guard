@@ -1,9 +1,11 @@
 name: NPM publish CD workflow
 
 on:
-  push:
-    branches: [master]
-
+  workflow_dispatch:
+    inputs:
+      updateType:
+        description: "Update type ('patch', 'major', or 'minor')"
+        required: true
 jobs:
   build:
     if: "!startsWith(github.event.head_commit.message, '[ci skip]')"
@@ -20,7 +22,7 @@ jobs:
       - run: npm test
       - run: git config --global user.name "GitHub CD bot"
       - run: git config --global user.email "github-cd-bot@example.com"
-      - run: npm version prerelease -m "[ci skip] %s"
+      - run: npm version ${{ github.event.inputs.updateType }} -m "[ci skip] %s"
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
