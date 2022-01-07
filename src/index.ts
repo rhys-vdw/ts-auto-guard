@@ -1087,15 +1087,38 @@ export function processProject(
 
       outFile.addStatements(functions.join('\n'))
 
+      // Memoize imports within local source file
+      const importsMap = new Map<string, string>()
+      for (const impDeclaration of sourceFile.getImportDeclarations()) {
+        impDeclaration.getNamedImports().forEach(impSpecifier => {
+          importsMap.set(
+            impSpecifier.getText(),
+            impDeclaration.getModuleSpecifierValue()
+          )
+        })
+      }
+
       outFile.addImportDeclarations(
         Array.from(dependencies.entries()).reduce(
           (structures, [importFile, imports]) => {
             if (outFile === importFile) {
               return structures
             }
-            const moduleSpecifier = outFile.getRelativePathAsModuleSpecifierTo(
+
+            let moduleSpecifier = outFile.getRelativePathAsModuleSpecifierTo(
               importFile
             )
+
+            if (importFile.isInNodeModules()) {
+              // Packages within node_modules should not be referenced via relative path
+              for (const im in imports) {
+                const importDeclaration = importsMap.get(im)
+                if (importDeclaration) {
+                  moduleSpecifier = importDeclaration
+                }
+              }
+            }
+
             const defaultImport = imports.default
             delete imports.default
             const namedImports = Object.entries(imports).map(([alias, name]) =>
