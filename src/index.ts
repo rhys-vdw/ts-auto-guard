@@ -149,7 +149,8 @@ function getTypeGuardName(
     const name = symbols
       .filter(x => x && x.getName() !== '__type')[0]
       ?.getName()
-    if (name) {
+    const isPrimitive = ['undefined', 'null', 'boolean', 'bigint', 'string', 'number'].includes(t.getText());
+    if (name && !isPrimitive) {
       return 'is' + name
     }
   }
@@ -324,7 +325,7 @@ To disable this warning, put comment "${suppressComment}" before the declaration
   if (type.isInterface()) {
     if (!Node.isInterfaceDeclaration(declaration)) {
       throw new TypeError(
-        'Extected declaration to be an interface delcaration!'
+        'Extected declaration to be an interface declaration!'
       )
     }
     declaration.getBaseTypes().forEach(baseType => {
@@ -668,7 +669,7 @@ function propertyConditions(
   const propertyName = property.name
 
   const isIdentifier =
-    propertyName[0] !== '"' && propertyName[0] !== "'" && !hasSpaces
+    propertyName[0] !== '"' && propertyName[0] !== "'" && !hasSpaces && isNaN(parseInt(propertyName))
   const strippedName = propertyName.replace(/"/g, '')
   const varName = isIdentifier
     ? `${objName}.${propertyName}`

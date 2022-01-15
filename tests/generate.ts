@@ -1031,6 +1031,76 @@ testProcessProject(
 )
 
 testProcessProject(
+    'generated type guards for numeric enums in optional records',
+    {
+      'test.ts': `
+    export enum Types{
+        TheGood = 1,
+        TheBad,
+        TheTypeSafe
+    }
+    export interface TestItem  {
+      room: Partial<Record<Types, string>>>;
+    }`,
+    },
+    {
+      'test.ts': null,
+      'test.guard.ts': `
+      import { Types, TestItem } from "./test";
+
+      export function isTypes(obj: any, _argumentName?: string): obj is Types {
+          return (
+              (obj === Types.TheGood ||
+                  obj === Types.TheBad ||
+                  obj === Types.TheTypeSafe)
+          )
+      }
+
+      export function isTestItem(obj: any, _argumentName?: string): obj is TestItem {
+          return (
+              (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+              (obj.room !== null &&
+                  typeof obj.room === "object" ||
+                  typeof obj.room === "function") &&
+              (typeof obj.room["1"] === "undefined" ||
+                  typeof obj.room["1"] === "string") &&
+              (typeof obj.room["2"] === "undefined" ||
+                  typeof obj.room["2"] === "string") &&
+              (typeof obj.room["3"] === "undefined" ||
+                  typeof obj.room["3"] === "string")
+          )
+      }`,
+    },
+    { options: { exportAll: true } }
+)
+
+testProcessProject(
+    'no type guards for primitive alias types',
+    {
+      'test.ts': `
+      export type Days = number
+      export type UUID = string
+      export enum Types { TheGood }
+      export type Blank = undefined
+      export type AlwaysNull = null`,
+    },
+    {
+      'test.ts': null,
+      'test.guard.ts': `
+    import { Types } from "./test";
+    
+    export function isTypes(obj: any, _argumentName?: string): obj is Types {
+        return (
+            obj === Types.TheGood
+        )
+    }`,
+    },
+    { options: { exportAll: true } }
+)
+
+testProcessProject(
   'generated type guards for arrays of any',
   {
     'test.ts': `
