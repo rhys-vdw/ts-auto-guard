@@ -1031,9 +1031,9 @@ testProcessProject(
 )
 
 testProcessProject(
-    'generated type guards for numeric enums in optional records',
-    {
-      'test.ts': `
+  'generated type guards for numeric enums in optional records',
+  {
+    'test.ts': `
     export enum Types{
         TheGood = 1,
         TheBad,
@@ -1042,10 +1042,10 @@ testProcessProject(
     export interface TestItem  {
       room: Partial<Record<Types, string>>>;
     }`,
-    },
-    {
-      'test.ts': null,
-      'test.guard.ts': `
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
       import { Types, TestItem } from "./test";
 
       export function isTypes(obj: any, _argumentName?: string): obj is Types {
@@ -1072,23 +1072,23 @@ testProcessProject(
                   typeof obj.room["3"] === "string")
           )
       }`,
-    },
-    { options: { exportAll: true } }
+  },
+  { options: { exportAll: true } }
 )
 
 testProcessProject(
-    'no type guards for primitive alias types',
-    {
-      'test.ts': `
+  'no type guards for primitive alias types',
+  {
+    'test.ts': `
       export type Days = number
       export type UUID = string
       export enum Types { TheGood }
       export type Blank = undefined
       export type AlwaysNull = null`,
-    },
-    {
-      'test.ts': null,
-      'test.guard.ts': `
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
     import { Types } from "./test";
     
     export function isTypes(obj: any, _argumentName?: string): obj is Types {
@@ -1096,8 +1096,8 @@ testProcessProject(
             obj === Types.TheGood
         )
     }`,
-    },
-    { options: { exportAll: true } }
+  },
+  { options: { exportAll: true } }
 )
 
 testProcessProject(
