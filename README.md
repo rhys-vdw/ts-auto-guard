@@ -86,7 +86,7 @@ export interface Person { // !do not forget to export - only exported types are 
 ### Process all types
 Use `--export-all` parameter to process all exported types:
 ```
-$ ts-auto-guard --export-all
+$ ts-auto-guard --export-all 'src/domain/*.ts'
 ```
 
 ## Debug mode
