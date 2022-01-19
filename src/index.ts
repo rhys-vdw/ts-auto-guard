@@ -149,7 +149,14 @@ function getTypeGuardName(
     const name = symbols
       .filter(x => x && x.getName() !== '__type')[0]
       ?.getName()
-    const isPrimitive = ['undefined', 'null', 'boolean', 'bigint', 'string', 'number'].includes(t.getText());
+    const isPrimitive = [
+      'undefined',
+      'null',
+      'boolean',
+      'bigint',
+      'string',
+      'number',
+    ].includes(t.getText())
     if (name && !isPrimitive) {
       return 'is' + name
     }
@@ -669,7 +676,10 @@ function propertyConditions(
   const propertyName = property.name
 
   const isIdentifier =
-    propertyName[0] !== '"' && propertyName[0] !== "'" && !hasSpaces && isNaN(parseInt(propertyName))
+    propertyName[0] !== '"' &&
+    propertyName[0] !== "'" &&
+    !hasSpaces &&
+    isNaN(parseInt(propertyName))
   const strippedName = propertyName.replace(/"/g, '')
   const varName = isIdentifier
     ? `${objName}.${propertyName}`
