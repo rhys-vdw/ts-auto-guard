@@ -1530,3 +1530,31 @@ testProcessProject(
     `,
   }
 )
+
+testProcessProject(
+  'generated type guards for intersection type',
+  {
+    'test.ts': `
+    export type X = { foo: number } & { bar: string }
+    `,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { X } from "./test";
+
+    export function isX(obj: any, _argumentName?: string): obj is X {
+        return (
+            (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+                typeof obj.foo === "number" &&
+                (obj !== null &&
+                  typeof obj === "object" ||
+                  typeof obj === "function") &&
+                typeof obj.bar === "string"
+            )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
