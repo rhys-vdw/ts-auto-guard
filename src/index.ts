@@ -219,6 +219,39 @@ function typeUnionConditions(
   return ors(...conditions)
 }
 
+function typeIntersectionConditions(
+  varName: string,
+  types: Type[],
+  addDependency: IAddDependency,
+  project: Project,
+  path: string,
+  arrayDepth: number,
+  records: readonly IRecord[],
+  outFile: SourceFile,
+  options: IProcessOptions
+): string {
+  const conditions: string[] = []
+  conditions.push(
+    ...(types
+      .map(type =>
+        typeConditions(
+          varName,
+          type,
+          addDependency,
+          project,
+          path,
+          arrayDepth,
+          true,
+          records,
+          outFile,
+          options
+        )
+      )
+      .filter(v => v !== null) as string[])
+  )
+  return ands(...conditions)
+}
+
 function parens(code: string) {
   return `(${code})`
 }
@@ -584,7 +617,7 @@ function typeConditions(
     )
   }
   if (type.isIntersection()) {
-    return typeUnionConditions(
+    return typeIntersectionConditions(
       varName,
       type.getIntersectionTypes(),
       addDependency,
