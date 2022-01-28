@@ -131,9 +131,9 @@ function getTypeGuardName(
     for (const line of doc.getInnerText().split('\n')) {
       const match = line
         .trim()
-        .match(/@see\s+(?:{\s*@\w+\s*(\w+)\s*}\s+)?ts-auto-guard:([^\s]*)/)
+        .match(/@see\s+(?:{\s*(@link\s*)?(\w+)\s*}\s+)?ts-auto-guard:([^\s]*)/)
       if (match !== null) {
-        const [, typeGuardName, command] = match
+        const [, , typeGuardName, command] = match
         if (command !== 'type-guard') {
           reportError(`command ${command} is not supported!`)
           return null
