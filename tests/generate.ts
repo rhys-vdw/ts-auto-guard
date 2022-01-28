@@ -128,28 +128,6 @@ testProcessProject(
 )
 
 testProcessProject(
-  'generates type guards for empty object',
-  {
-    'test.ts': `
-    /** @see {isEmpty} ts-auto-guard:type-guard */
-    export interface Empty {}`,
-  },
-  {
-    'test.ts': null,
-    'test.guard.ts': `
-    import { Empty } from "./test";
-
-    export function isEmpty(obj: any, _argumentName?: string): obj is Empty {
-        return (
-              (obj !== null &&
-              typeof obj === "object" ||
-              typeof obj === "function")
-           )
-    }`,
-  }
-)
-
-testProcessProject(
   'generates type guards for empty object if exportAll is true',
   {
     'test.ts': `
@@ -169,6 +147,26 @@ testProcessProject(
     }`,
   },
   { options: { exportAll: true, debug: false } }
+)
+
+testProcessProject(
+  'generates type guards for JSDoc @see with @link tag',
+  {
+    'test.ts': `
+    /** @see {@link isBool} ts-auto-guard:type-guard */
+    export type Bool = boolean`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { Bool } from "./test";
+
+    export function isBool(obj: any, _argumentName?: string): obj is Bool {
+        return (
+            typeof obj === "boolean"
+        )
+    }`,
+  }
 )
 
 testProcessProject(
@@ -234,7 +232,7 @@ testProcessProject(
       bar: Bar,
       bars: Array<Bar>
     }
-    
+
     /** @see {isBar} ts-auto-guard:type-guard */
     export interface Bar {
       bar: number,
@@ -246,11 +244,11 @@ testProcessProject(
     [`${PATH_PREFIX}/foo/bar/test.ts`]: null,
     [`${PATH_PREFIX}/foo/bar/test.guard.ts`]: `
     import { Foo, Bar } from "./test";
-    
+
     function evaluate(
-      isCorrect: boolean, 
-      varName: string, 
-      expected: string, 
+      isCorrect: boolean,
+      varName: string,
+      expected: string,
       actual: any
     ): boolean {
       if (!isCorrect) {
@@ -261,7 +259,7 @@ testProcessProject(
       }
       return isCorrect
     }
-    
+
     export function isFoo(obj: any, argumentName: string = "foo"): obj is Foo {
       return (
         (obj !== null &&
@@ -344,7 +342,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj.foo === "number" &&
@@ -371,7 +369,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -398,7 +396,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -425,7 +423,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo-1"] === "number" &&
@@ -480,7 +478,7 @@ testProcessProject(
 
     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
         return (
-            (obj !== null && 
+            (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
             typeof obj["foo 1"] === "number" &&
@@ -867,10 +865,10 @@ testProcessProject(
     'test.ts': `
     /** @see {isPropertyValueType} ts-auto-guard:type-guard */
     export type PropertyValueType = {value: string};
-    
+
     /** @see {isPropertyName} ts-auto-guard:type-guard */
-    export type PropertyName = 'name' | 'value'; 
-    
+    export type PropertyName = 'name' | 'value';
+
     /** @see {isFoo} ts-auto-guard:type-guard */
     export type Foo = {
       [key in PropertyName]: PropertyValueType
@@ -880,7 +878,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
      import { PropertyValueType, PropertyName, Foo } from "./test";
-    
+
      export function isPropertyValueType(obj: any, _argumentName?: string): obj is PropertyValueType {
         return (
             (obj !== null &&
@@ -889,20 +887,20 @@ testProcessProject(
           typeof obj.value === "string"
           )
       }
-      
+
      export function isPropertyName(obj: any, _argumentName?: string): obj is PropertyName {
        return (
          (obj === "name" ||
            obj === "value")
        )
      }
-      
+
      export function isFoo(obj: any, _argumentName?: string): obj is Foo {
        return (
          (obj !== null &&
               typeof obj === "object" ||
               typeof obj === "function") &&
-         isPropertyValueType(obj.name) as boolean && 
+         isPropertyValueType(obj.name) as boolean &&
          isPropertyValueType(obj.value) as boolean
        )
      }
@@ -916,10 +914,10 @@ testProcessProject(
     'test.ts': `
    /** @see {isBranch1} ts-auto-guard:type-guard */
    export type Branch1 = Branch1[] | string;
-   
+
    /** @see {isBranch2} ts-auto-guard:type-guard */
    export type Branch2 = { branches: Branch2[] } | string;
-   
+
    /** @see {isBranch3} ts-auto-guard:type-guard */
    export type Branch3 = { branches: Branch3[] } | {branches: Branch3 }[] | string;
     `,
@@ -928,7 +926,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
     import { Branch1, Branch2, Branch3 } from "./test";
-    
+
     export function isBranch1(obj: any, _argumentName?: string): obj is Branch1 {
         return (
             (typeof obj === "string" ||
@@ -938,7 +936,7 @@ testProcessProject(
                 ))
         )
     }
-    
+
     export function isBranch2(obj: any, _argumentName?: string): obj is Branch2 {
         return (
             (typeof obj === "string" ||
@@ -951,7 +949,7 @@ testProcessProject(
                 ))
         )
     }
-    
+
     export function isBranch3(obj: any, _argumentName?: string): obj is Branch3 {
         return (
             (typeof obj === "string" ||
@@ -1018,7 +1016,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
     import { Types } from "./test";
-    
+
     export function isTypes(obj: any, _argumentName?: string): obj is Types {
         return (
             (obj === Types.TheGood ||
@@ -1090,7 +1088,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
     import { Types } from "./test";
-    
+
     export function isTypes(obj: any, _argumentName?: string): obj is Types {
         return (
             obj === Types.TheGood
@@ -1113,7 +1111,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
       import { Foo } from "./test";
-      
+
       export function isFoo(obj: any, _argumentName?: string): obj is Foo {
           return (
               (obj !== null &&
@@ -1141,7 +1139,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
         import { Foo } from "./test";
-        
+
         export function isFoo(obj: any, _argumentName?: string): obj is Foo {
             return (
                 (obj !== null &&
@@ -1488,7 +1486,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
-      
+
       export function isTestType(obj: any, _argumentName?: string): obj is TestType {
           return (
               (obj !== null &&
@@ -1520,7 +1518,7 @@ testProcessProject(
     'test.ts': null,
     'test.guard.ts': `
       import { TestType } from "./test";
-      
+
       export function isTestType(obj: any, _argumentName?: string): obj is TestType {
           return (
               typeof obj === "function" &&
