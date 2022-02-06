@@ -1556,3 +1556,29 @@ testProcessProject(
   },
   { options: { exportAll: true } }
 )
+
+testProcessProject(
+  'generates tuples',
+  {
+    'test.ts': `
+    export interface A {
+      b: [number]
+    }`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { A } from "./test";
+
+    export function isA(obj: any, _argumentName?: string): obj is A {
+        return (
+            (obj !== null &&
+                typeof obj === "object" ||
+                typeof obj === "function") &&
+            Array.isArray(obj.b) &&
+            typeof obj.b[0] === "number"
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)

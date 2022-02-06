@@ -659,8 +659,8 @@ function typeConditions(
     typeToDependency(type, addDependency)
     return `${varName} instanceof ${type.getSymbol()!.getName()}`
   }
-  if (type.isObject()) {
-    return objectCondition(
+  if (type.isTuple()) {
+    return tupleCondition(
       varName,
       type,
       addDependency,
@@ -672,8 +672,8 @@ function typeConditions(
       options
     )
   }
-  if (type.isTuple()) {
-    return tupleCondition(
+  if (type.isObject()) {
+    return objectCondition(
       varName,
       type,
       addDependency,
