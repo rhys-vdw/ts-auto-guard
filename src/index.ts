@@ -355,7 +355,7 @@ function objectCondition(
       console.warn(
         `
 It seems that ${varName} has a function type.
-Note that it is impossible to check if a function has the correct signiture and return type at runtime.
+Note that it is impossible to check if a function has the correct signature and return type at runtime.
 To disable this warning, put comment "${suppressComment}" before the declaration.
 `
       )
