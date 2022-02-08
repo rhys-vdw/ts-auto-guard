@@ -590,7 +590,7 @@ function typeConditions(
     return eq(varName, 'null')
   }
   if (type.getText() === 'any' || type.getText() === 'unknown') {
-    return null
+    return 'true'
   }
   if (type.getText() === 'never') {
     return typeOf(varName, 'undefined')
