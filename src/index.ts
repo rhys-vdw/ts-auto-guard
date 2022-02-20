@@ -149,15 +149,7 @@ function getTypeGuardName(
     const name = symbols
       .filter(x => x && x.getName() !== '__type')[0]
       ?.getName()
-    const isPrimitive = [
-      'undefined',
-      'null',
-      'boolean',
-      'bigint',
-      'string',
-      'number',
-    ].includes(t.getText())
-    if (name && !isPrimitive) {
+    if (name) {
       return 'is' + name
     }
   }
@@ -933,7 +925,11 @@ function generateTypeGuard(
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  return [signature, shortCircuit, `return (\n${conditions}\n)\n}\n`].join('')
+  return [
+    signature,
+    shortCircuit,
+    `return (\n${conditions || true}\n)\n}\n`,
+  ].join('')
 }
 
 // -- Process project --

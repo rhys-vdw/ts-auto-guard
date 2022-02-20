@@ -1075,30 +1075,6 @@ testProcessProject(
 )
 
 testProcessProject(
-  'no type guards for primitive alias types',
-  {
-    'test.ts': `
-      export type Days = number
-      export type UUID = string
-      export enum Types { TheGood }
-      export type Blank = undefined
-      export type AlwaysNull = null`,
-  },
-  {
-    'test.ts': null,
-    'test.guard.ts': `
-    import { Types } from "./test";
-
-    export function isTypes(obj: any, _argumentName?: string): obj is Types {
-        return (
-            obj === Types.TheGood
-        )
-    }`,
-  },
-  { options: { exportAll: true } }
-)
-
-testProcessProject(
   'generated type guards for arrays of any',
   {
     'test.ts': `
@@ -1577,6 +1553,137 @@ testProcessProject(
                 typeof obj === "function") &&
             Array.isArray(obj.b) &&
             typeof obj.b[0] === "number"
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'skips checking any type in array',
+  {
+    'test.ts': `export type A = any[]`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { A } from "./test";
+
+    export function isA(obj: any, _argumentName?: string): obj is A {
+        return (
+          Array.isArray(obj)
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'works for any type',
+  {
+    'test.ts': `export type A = any`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { A } from "./test";
+
+    export function isA(obj: any, _argumentName?: string): obj is A {
+        return (
+          true
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'works for unknown type',
+  {
+    'test.ts': `export type A = unknown`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { A } from "./test";
+
+    export function isA(obj: any, _argumentName?: string): obj is A {
+        return (
+          true
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'any and unknown work in union types',
+  {
+    'test.ts': `
+    type anyType = any
+    type unknownType = unknown
+
+    export type AnyOrString = string | anyType
+    export type UnknownOrString = string | unknownType
+    export type AnyOrUnknownOrString = string | anyType | unknownType`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { AnyOrString, UnknownOrString, AnyOrUnknownOrString } from "./test";
+
+    export function isAnyOrString(obj: any, _argumentName?: string): obj is AnyOrString {
+        return (
+          true
+        )
+    }
+
+    export function isUnknownOrString(obj: any, _argumentName?: string): obj is UnknownOrString {
+      return (
+        true
+      )
+    }
+
+    export function isAnyOrUnknownOrString(obj: any, _argumentName?: string): obj is AnyOrUnknownOrString {
+        return (
+          true
+        )
+    }`,
+  },
+  { options: { exportAll: true } }
+)
+
+testProcessProject(
+  'any and unknown work in interesction types',
+  {
+    'test.ts': `
+    type anyType = any
+    type unknownType = unknown
+
+    export type AnyAndString = string & anyType
+    export type UnknownAndString = string & unknownType
+    export type AnyAndUnknownAndString = string & anyType & unknownType`,
+  },
+  {
+    'test.ts': null,
+    'test.guard.ts': `
+    import { AnyAndString, UnknownAndString, AnyAndUnknownAndString } from "./test";
+
+    export function isAnyAndString(obj: any, _argumentName?: string): obj is AnyAndString {
+        return (
+          true
+        )
+    }
+
+    export function isUnknownAndString(obj: any, _argumentName?: string): obj is UnknownAndString {
+      return (
+        typeof obj === "string"
+      )
+    }
+
+    export function isAnyAndUnknownAndString(obj: any, _argumentName?: string): obj is AnyAndUnknownAndString {
+        return (
+          true
         )
     }`,
   },
