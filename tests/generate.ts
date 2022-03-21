@@ -113,19 +113,18 @@ testProcessProject(
   { options: { guardFileName: 'foo' } }
 )
 
-testProcessProject(
-  'rejects invalid guardFileNames: *',
-  {},
-  {},
-  { options: { guardFileName: 'f*o' }, throws: /guardFileName/ }
-)
-
-testProcessProject(
-  'rejects invalid guardFileNames: /',
-  {},
-  {},
-  { options: { guardFileName: 'f/o' }, throws: /guardFileName/ }
-)
+const invalidGuardFileNameCharacters = ['*', '/']
+for (const invalidCharacter of invalidGuardFileNameCharacters) {
+  testProcessProject(
+    `rejects invalid guardFileNames: ${invalidCharacter}`,
+    {},
+    {},
+    {
+      options: { guardFileName: `f${invalidCharacter}o` },
+      throws: /guardFileName/,
+    }
+  )
+}
 
 testProcessProject(
   'generates type guards for empty object if exportAll is true',
@@ -352,14 +351,86 @@ testProcessProject(
   }
 )
 
+// characters that are currently not supported include double quotes, backslashes and newlines
+const nonAlphanumericCharacterPropertyNames = [
+  '\0',
+  ' ',
+  '-',
+  '+',
+  '*',
+  '/',
+  '.',
+  'foo bar',
+  'foo-bar',
+  'foo+bar',
+  'foo*bar',
+  'foo/bar',
+  'foo.bar',
+  "'foobar'",
+  '#hashtag',
+  '1337_leadingNumbers',
+]
+
+for (const propertyName of nonAlphanumericCharacterPropertyNames) {
+  testProcessProject(
+    `generates type guards for interface property with non-alphanumeric name '${propertyName}'`,
+    {
+      'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export interface Foo {
+      "${propertyName}": number
+    }`,
+    },
+    {
+      'test.ts': null,
+      'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null &&
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["${propertyName}"] === "number"
+        )
+    }`,
+    }
+  )
+
+  testProcessProject(
+    `generates type guards for type property with non-alphanumeric name '${propertyName}'`,
+    {
+      'test.ts': `
+    /** @see {isFoo} ts-auto-guard:type-guard */
+    export type Foo = {
+      "${propertyName}": number
+    }`,
+    },
+    {
+      'test.ts': null,
+      'test.guard.ts': `
+    import { Foo } from "./test";
+
+    export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+        return (
+            (obj !== null &&
+            typeof obj === "object" ||
+            typeof obj === "function") &&
+            typeof obj["${propertyName}"] === "number"
+        )
+    }`,
+    }
+  )
+}
+
 testProcessProject(
-  'generates type guards for interface properties with spaces',
+  'generates type guards for interface properties with numerical names',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export interface Foo {
-      "foo 1": number,
-      "bar 2": string
+      "1": number,
+      "2": string
     }`,
   },
   {
@@ -372,21 +443,21 @@ testProcessProject(
             (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
-            typeof obj["foo 1"] === "number" &&
-            typeof obj["bar 2"] === "string"
+            typeof obj["1"] === "number" &&
+            typeof obj["2"] === "string"
         )
     }`,
   }
 )
 
 testProcessProject(
-  'generates type guards for type properties with spaces',
+  'generates type guards for type properties with numerical names',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export type Foo = {
-      "foo 1": number,
-      "bar 2": string
+      "1": number,
+      "2": string
     }`,
   },
   {
@@ -399,21 +470,19 @@ testProcessProject(
             (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
-            typeof obj["foo 1"] === "number" &&
-            typeof obj["bar 2"] === "string"
+            typeof obj["1"] === "number" &&
+            typeof obj["2"] === "string"
         )
     }`,
   }
 )
-
 testProcessProject(
-  'generates type guards for interface properties with dashes',
+  'generates type guards for interface property with empty string as name',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export interface Foo {
-      "foo-1": number,
-      "bar-2": string
+      "": number
     }`,
   },
   {
@@ -426,49 +495,19 @@ testProcessProject(
             (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
-            typeof obj["foo-1"] === "number" &&
-            typeof obj["bar-2"] === "string"
+            typeof obj[""] === "number"
         )
     }`,
   }
 )
 
-// Commented out since this is a bug that should be fixed.
-
-// testProcessProject(
-//   'generates type guards for type properties with dashes',
-//   {
-//     'test.ts': `
-//     /** @see {isFoo} ts-auto-guard:type-guard */ /**
-//     export type Foo = {
-//       "foo-1": number,
-//       "bar-2": string
-//     }`,
-//   },
-//   {
-//     'test.guard.ts': `
-//     import { Foo } from "./test";
-
-//     export function isFoo(obj: any, _argumentName?: string): obj is Foo {
-//         return (
-//             (obj !== null &&
-//             typeof obj === "object" ||
-//             typeof obj === "function") &&
-//             typeof obj["foo-1"] === "number" &&
-//             typeof obj["bar-2"] === "string"
-//         )
-//     }`,
-//   }
-// )
-
 testProcessProject(
-  'generates type guards for properties with spaces in types instead of interfaces',
+  'generates type guards for type property with empty string as name',
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export type Foo = {
-      "foo 1": number,
-      "bar 2": string
+      "": number
     }`,
   },
   {
@@ -481,8 +520,7 @@ testProcessProject(
             (obj !== null &&
             typeof obj === "object" ||
             typeof obj === "function") &&
-            typeof obj["foo 1"] === "number" &&
-            typeof obj["bar 2"] === "string"
+            typeof obj[""] === "number"
         )
     }`,
   }
