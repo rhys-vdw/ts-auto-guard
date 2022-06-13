@@ -220,11 +220,10 @@ testProcessProject(
   }
 )
 
-const PATH_PREFIX = process.cwd().slice(1) // Remove / from the beginning
 testProcessProject(
   'show debug info',
   {
-    [`${PATH_PREFIX}/foo/bar/test.ts`]: `
+    [`foo/bar/test.ts`]: `
     /** @see {isFoo} ts-auto-guard:type-guard */
     export interface Foo {
       foo: number,
@@ -240,8 +239,8 @@ testProcessProject(
     `,
   },
   {
-    [`${PATH_PREFIX}/foo/bar/test.ts`]: null,
-    [`${PATH_PREFIX}/foo/bar/test.guard.ts`]: `
+    [`foo/bar/test.ts`]: null,
+    [`foo/bar/test.guard.ts`]: `
     import { Foo, Bar } from "./test";
 
     function evaluate(
@@ -265,11 +264,11 @@ testProcessProject(
           typeof obj === "object" ||
           typeof obj === "function") &&
           evaluate(typeof obj.foo === "number", \`\${argumentName}.foo\`, "number", obj.foo) &&
-          evaluate(isBar(obj.bar) as boolean, \`\${argumentName}.bar\`, "import(\\"./foo/bar/test\\").Bar", obj.bar) &&
+          evaluate(isBar(obj.bar) as boolean, \`\${argumentName}.bar\`, "import(\\"/foo/bar/test\\").Bar", obj.bar) &&
           evaluate(Array.isArray(obj.bars) &&
             obj.bars.every((e: any) =>
               isBar(e) as boolean
-            ), \`\${argumentName}.bars\`, "import(\\"./foo/bar/test\\").Bar[]", obj.bars)
+            ), \`\${argumentName}.bars\`, "import(\\"/foo/bar/test\\").Bar[]", obj.bars)
         )
     }
 
