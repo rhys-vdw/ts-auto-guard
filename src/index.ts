@@ -913,9 +913,9 @@ function generateTypeGuard(
   )
 
   const secondArgument = debug
-    ? `argumentName: string = "${defaultArgumentName}"`
-    : `_argumentName?: string`
-  const signature = `export function ${functionName}(obj: any, ${secondArgument}): obj is ${typeName} {\n`
+    ? `, argumentName: string = "${defaultArgumentName}"`
+    : ''
+  const signature = `export function ${functionName}(obj: any${secondArgument}): obj is ${typeName} {\n`
   const shortCircuit = shortCircuitCondition
     ? `if (${shortCircuitCondition}) return true\n`
     : ''

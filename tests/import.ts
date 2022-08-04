@@ -70,7 +70,7 @@ export interface Foo {
 }`,
     guardFile: `import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+export function isFoo(obj: any): obj is Foo {
     return (
         (obj !== null &&
             typeof obj === "object" ||
@@ -93,7 +93,7 @@ export interface Foo {
 }`,
     guardFile: `import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+export function isFoo(obj: any): obj is Foo {
     return (
         (obj !== null &&
             typeof obj === "object" ||
@@ -112,7 +112,7 @@ export interface Foo {
     guardFile: `import { CompilerOptionsContainer } from "@ts-morph/common";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+export function isFoo(obj: any): obj is Foo {
     return (
         (obj !== null &&
             typeof obj === "object" ||
@@ -133,7 +133,7 @@ export interface Foo {
     guardFile: `import { CompilerOptionsContainer, TsConfigResolver, InMemoryFileSystemHost } from "@ts-morph/common";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+export function isFoo(obj: any): obj is Foo {
     return (
         (obj !== null &&
             typeof obj === "object" ||
@@ -154,7 +154,7 @@ export interface Foo {
     guardFile: `import { Directory } from "ts-morph";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any, _argumentName?: string): obj is Foo {
+export function isFoo(obj: any): obj is Foo {
     return (
         (obj !== null &&
             typeof obj === "object" ||
