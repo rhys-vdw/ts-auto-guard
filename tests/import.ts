@@ -70,17 +70,18 @@ export interface Foo {
 }`,
     guardFile: `import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any): obj is Foo {
+export function isFoo(obj: unknown): obj is Foo {
+    const typedObj = obj as Foo
     return (
-        (obj !== null &&
-            typeof obj === "object" ||
-            typeof obj === "function") &&
-        (obj.target !== null &&
-            typeof obj.target === "object" ||
-            typeof obj.target === "function") &&
-        (typeof obj.target.skipLoadingLibFiles === "undefined" ||
-            obj.target.skipLoadingLibFiles === false ||
-            obj.target.skipLoadingLibFiles === true)
+        (typedObj !== null &&
+            typeof typedObj === "object" ||
+            typeof typedObj === "function") &&
+        (typedObj.target !== null &&
+            typeof typedObj.target === "object" ||
+            typeof typedObj.target === "function") &&
+        (typeof typedObj.target.skipLoadingLibFiles === "undefined" ||
+            typedObj.target.skipLoadingLibFiles === false ||
+            typedObj.target.skipLoadingLibFiles === true)
     )
 }
 `,
@@ -93,12 +94,13 @@ export interface Foo {
 }`,
     guardFile: `import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any): obj is Foo {
+export function isFoo(obj: unknown): obj is Foo {
+    const typedObj = obj as Foo
     return (
-        (obj !== null &&
-            typeof obj === "object" ||
-            typeof obj === "function") &&
-        typeof obj.target === "function"
+        (typedObj !== null &&
+            typeof typedObj === "object" ||
+            typeof typedObj === "function") &&
+        typeof typedObj.target === "function"
     )
 }
 `,
@@ -112,12 +114,13 @@ export interface Foo {
     guardFile: `import { CompilerOptionsContainer } from "@ts-morph/common";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any): obj is Foo {
+export function isFoo(obj: unknown): obj is Foo {
+    const typedObj = obj as Foo
     return (
-        (obj !== null &&
-            typeof obj === "object" ||
-            typeof obj === "function") &&
-        obj.target instanceof CompilerOptionsContainer
+        (typedObj !== null &&
+            typeof typedObj === "object" ||
+            typeof typedObj === "function") &&
+        typedObj.target instanceof CompilerOptionsContainer
     )
 }
 `,
@@ -133,14 +136,15 @@ export interface Foo {
     guardFile: `import { CompilerOptionsContainer, TsConfigResolver, InMemoryFileSystemHost } from "@ts-morph/common";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any): obj is Foo {
+export function isFoo(obj: unknown): obj is Foo {
+    const typedObj = obj as Foo
     return (
-        (obj !== null &&
-            typeof obj === "object" ||
-            typeof obj === "function") &&
-        obj.target instanceof CompilerOptionsContainer &&
-        obj.res instanceof TsConfigResolver &&
-        obj.fs instanceof InMemoryFileSystemHost
+        (typedObj !== null &&
+            typeof typedObj === "object" ||
+            typeof typedObj === "function") &&
+        typedObj.target instanceof CompilerOptionsContainer &&
+        typedObj.res instanceof TsConfigResolver &&
+        typedObj.fs instanceof InMemoryFileSystemHost
     )
 }
 `,
@@ -154,12 +158,13 @@ export interface Foo {
     guardFile: `import { Directory } from "ts-morph";
 import { Foo } from "./ImportTest";
 
-export function isFoo(obj: any): obj is Foo {
+export function isFoo(obj: unknown): obj is Foo {
+    const typedObj = obj as Foo
     return (
-        (obj !== null &&
-            typeof obj === "object" ||
-            typeof obj === "function") &&
-        obj.dir instanceof Directory
+        (typedObj !== null &&
+            typeof typedObj === "object" ||
+            typeof typedObj === "function") &&
+        typedObj.dir instanceof Directory
     )
 }
 `,
