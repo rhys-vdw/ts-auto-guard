@@ -899,8 +899,10 @@ function generateTypeGuard(
   const { debug, shortCircuitCondition } = options
   const typeName = typeDeclaration.getName()
   const defaultArgumentName = lowerFirst(typeName)
+  const signatureObjName = 'obj'
+  const innerObjName = 'typedObj'
   const conditions = typeConditions(
-    'obj',
+    innerObjName,
     typeDeclaration.getType(),
     addDependency,
     project,
@@ -915,16 +917,16 @@ function generateTypeGuard(
   const secondArgument = debug
     ? `, argumentName: string = "${defaultArgumentName}"`
     : ''
-  const signature = `export function ${functionName}(obj: any${secondArgument}): obj is ${typeName} {\n`
+  const signature = `export function ${functionName}(${signatureObjName}: unknown${secondArgument}): ${signatureObjName} is ${typeName} {\n`
   const shortCircuit = shortCircuitCondition
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  return [
-    signature,
-    shortCircuit,
-    `return (\n${conditions || true}\n)\n}\n`,
-  ].join('')
+  const functionBody = `const ${innerObjName} = ${signatureObjName} as ${typeName}\nreturn (\n${
+    conditions || true
+  }\n)\n}\n`
+
+  return [signature, shortCircuit, functionBody].join('')
 }
 
 // -- Process project --
