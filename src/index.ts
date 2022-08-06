@@ -697,16 +697,9 @@ function propertyConditions(
   const { debug } = options
   const propertyName = property.name
 
-  // can't start with a number (\d) and then only consists of letters, numbers and the underscore (\w)
-  const validPropertyNameRegex = /^(?!\d)\w+$/
-  const isIdentifier = validPropertyNameRegex.test(propertyName)
   const strippedName = propertyName.replace(/"/g, '')
-  const varName = isIdentifier
-    ? `${objName}.${propertyName}`
-    : `${objName}["${strippedName}"]`
-  const propertyPath = isIdentifier
-    ? `${path}.${propertyName}`
-    : `${path}["${strippedName}"]`
+  const varName = `${objName}["${strippedName}"]`
+  const propertyPath = `${path}["${strippedName}"]`
 
   let expectedType = property.type.getText()
   const conditions = typeConditions(

@@ -76,12 +76,12 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        (typedObj.target !== null &&
-            typeof typedObj.target === "object" ||
-            typeof typedObj.target === "function") &&
-        (typeof typedObj.target.skipLoadingLibFiles === "undefined" ||
-            typedObj.target.skipLoadingLibFiles === false ||
-            typedObj.target.skipLoadingLibFiles === true)
+        (typedObj["target"] !== null &&
+            typeof typedObj["target"] === "object" ||
+            typeof typedObj["target"] === "function") &&
+        (typeof typedObj["target"]["skipLoadingLibFiles"] === "undefined" ||
+        typedObj["target"]["skipLoadingLibFiles"] === false ||
+        typedObj["target"]["skipLoadingLibFiles"] === true)
     )
 }
 `,
@@ -100,7 +100,7 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        typeof typedObj.target === "function"
+        typeof typedObj["target"] === "function"
     )
 }
 `,
@@ -120,7 +120,7 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        typedObj.target instanceof CompilerOptionsContainer
+        typedObj["target"] instanceof CompilerOptionsContainer
     )
 }
 `,
@@ -142,9 +142,9 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        typedObj.target instanceof CompilerOptionsContainer &&
-        typedObj.res instanceof TsConfigResolver &&
-        typedObj.fs instanceof InMemoryFileSystemHost
+        typedObj["target"] instanceof CompilerOptionsContainer &&
+        typedObj["res"] instanceof TsConfigResolver &&
+        typedObj["fs"] instanceof InMemoryFileSystemHost
     )
 }
 `,
@@ -164,7 +164,7 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        typedObj.dir instanceof Directory
+        typedObj["dir"] instanceof Directory
     )
 }
 `,
