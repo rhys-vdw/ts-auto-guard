@@ -80,8 +80,8 @@ export function isFoo(obj: unknown): obj is Foo {
             typeof typedObj["target"] === "object" ||
             typeof typedObj["target"] === "function") &&
         (typeof typedObj["target"]["skipLoadingLibFiles"] === "undefined" ||
-        typedObj["target"]["skipLoadingLibFiles"] === false ||
-        typedObj["target"]["skipLoadingLibFiles"] === true)
+            typedObj["target"]["skipLoadingLibFiles"] === false ||
+            typedObj["target"]["skipLoadingLibFiles"] === true)
     )
 }
 `,
