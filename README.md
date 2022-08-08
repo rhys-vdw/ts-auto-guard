@@ -41,10 +41,11 @@ export function isPerson(obj: unknown): obj is Person {
   const typedObj = obj as Person
   return (
     typeof typedObj === 'object' &&
-    typeof typedObj.name === 'string' &&
-    (typeof typedObj.age === 'undefined' || typeof typedObj.age === 'number') &&
-    Array.isArray(typedObj.children) &&
-    typedObj.children.every(e => isPerson(e))
+    typeof typedObj['name'] === 'string' &&
+    (typeof typedObj['age'] === 'undefined' ||
+      typeof typedObj['age'] === 'number') &&
+    Array.isArray(typedObj['children']) &&
+    typedObj['children'].every(e => isPerson(e))
   )
 }
 ```
