@@ -70,3 +70,22 @@ Info 66   [19:34:49.649] -----------------------------------------------
 Info 67   [19:34:50.303] Before ensureProjectForOpenFiles:
 Info 68   [19:34:50.303] After ensureProjectForOpenFiles:
 Info 69   [19:34:50.303] got projects updated in background, updating diagnostics for /home/pac/rhys-normal/ts-auto-guard/src/index.ts
+Info 70   [19:50:37.694] Search path: /home/pac/rhys-normal/ts-auto-guard/src
+Info 71   [19:50:37.695] For info: /home/pac/rhys-normal/ts-auto-guard/src/cli.ts :: No config files found.
+Info 72   [19:50:37.702] Starting updateGraphWorker: Project: /dev/null/inferredProject2*
+Info 73   [19:50:37.935] Finishing updateGraphWorker: Project: /dev/null/inferredProject2* Version: 1 structureChanged: true structureIsReused:: Not Elapsed: 233.26543500088155ms
+Info 74   [19:50:37.935] Project '/dev/null/inferredProject2*' (Inferred)
+Info 75   [19:50:37.935] 	Files (95)
+
+Info 76   [19:50:37.935] -----------------------------------------------
+Info 77   [19:50:37.949] `remove Project::
+Info 78   [19:50:37.949] Project '/dev/null/inferredProject1*' (Inferred)
+Info 79   [19:50:37.949] 	Files (93)
+
+Info 80   [19:50:37.949] -----------------------------------------------
+Info 81   [20:14:00.908] Starting updateGraphWorker: Project: /dev/null/inferredProject2*
+Info 82   [20:14:01.018] Finishing updateGraphWorker: Project: /dev/null/inferredProject2* Version: 2 structureChanged: true structureIsReused:: Not Elapsed: 98.87061700038612ms
+Info 83   [20:14:01.018] Project '/dev/null/inferredProject2*' (Inferred)
+Info 84   [20:14:01.018] 	Files (93)
+
+Info 85   [20:14:01.018] -----------------------------------------------
