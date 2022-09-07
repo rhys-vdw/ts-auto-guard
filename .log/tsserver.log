@@ -1,13 +1,13 @@
-Info 0    [15:56:55.943] Starting TS Server
-Info 1    [15:56:55.944] Version: 4.0.5
-Info 2    [15:56:55.944] Arguments: /usr/bin/node /home/pac/rhys/ts-auto-guard/node_modules/typescript/lib/tsserver.js --logFile /home/pac/rhys/ts-auto-guard/.log/tsserver.log --logVerbosity info --cancellationPipeName /tmp/307a75ede0993fe286f303ed4ae583e4/tscancellation*
-Info 3    [15:56:55.944] Platform: linux NodeVersion: 18 CaseSensitive: true
-Info 4    [15:56:55.944] ServerMode: undefined syntaxOnly: false hasUnknownServerMode: undefined
-Info 5    [15:56:55.974] Format host information updated
-Info 6    [15:56:56.10] Search path: /home/pac/rhys/ts-auto-guard/src
-Info 7    [15:56:56.15] For info: /home/pac/rhys/ts-auto-guard/src/index.ts :: Config file name: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 8    [15:56:56.15] Opened configuration file /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 9    [15:56:56.109] Config: /home/pac/rhys/ts-auto-guard/tsconfig.json : {
+Info 0    [16:16:56.464] Starting TS Server
+Info 1    [16:16:56.465] Version: 4.0.5
+Info 2    [16:16:56.465] Arguments: /usr/bin/node /home/pac/rhys/ts-auto-guard/node_modules/typescript/lib/tsserver.js --logFile /home/pac/rhys/ts-auto-guard/.log/tsserver.log --logVerbosity info --cancellationPipeName /tmp/2ea411ba35c1620b8ae6d6c560b50541/tscancellation*
+Info 3    [16:16:56.465] Platform: linux NodeVersion: 18 CaseSensitive: true
+Info 4    [16:16:56.465] ServerMode: undefined syntaxOnly: false hasUnknownServerMode: undefined
+Info 5    [16:16:56.492] Format host information updated
+Info 6    [16:16:56.534] Search path: /home/pac/rhys/ts-auto-guard/src
+Info 7    [16:16:56.536] For info: /home/pac/rhys/ts-auto-guard/src/index.ts :: Config file name: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 8    [16:16:56.537] Opened configuration file /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 9    [16:16:56.577] Config: /home/pac/rhys/ts-auto-guard/tsconfig.json : {
  "rootNames": [
   "/home/pac/rhys/ts-auto-guard/src/cli.ts",
   "/home/pac/rhys/ts-auto-guard/src/index.ts"
@@ -29,63 +29,44 @@ Info 9    [15:56:56.109] Config: /home/pac/rhys/ts-auto-guard/tsconfig.json : {
   "configFilePath": "/home/pac/rhys/ts-auto-guard/tsconfig.json"
  }
 }
-Info 10   [15:56:56.249] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 11   [15:56:59.435] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 1 structureChanged: true Elapsed: 3186.0191380009055ms
-Info 12   [15:56:59.435] Project '/home/pac/rhys/ts-auto-guard/tsconfig.json' (Configured)
-Info 13   [15:56:59.436] 	Files (89)
+Info 10   [16:16:56.709] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 11   [16:16:59.444] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 1 structureChanged: true Elapsed: 2734.585168999969ms
+Info 12   [16:16:59.444] Project '/home/pac/rhys/ts-auto-guard/tsconfig.json' (Configured)
+Info 13   [16:16:59.444] 	Files (89)
 
-Info 14   [15:56:59.436] -----------------------------------------------
-Info 15   [15:56:59.467] Before ensureProjectForOpenFiles:
-Info 16   [15:56:59.467] After ensureProjectForOpenFiles:
-Info 17   [15:56:59.467] got projects updated in background, updating diagnostics for /home/pac/rhys/ts-auto-guard/src/index.ts
-Info 18   [15:57:21.564] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 19   [15:57:21.622] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 2 structureChanged: false Elapsed: 57.27641899883747ms
-Info 20   [15:57:21.622] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 21   [15:57:22.564] Format host information updated
-Info 22   [15:57:24.175] Format host information updated
-Info 23   [15:57:24.459] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 24   [15:57:24.511] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 3 structureChanged: false Elapsed: 51.729399997740984ms
-Info 25   [15:57:24.511] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 26   [15:57:25.415] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 27   [15:57:25.429] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4 structureChanged: false Elapsed: 14.290523000061512ms
-Info 28   [15:57:25.429] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 29   [15:57:27.568] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 30   [15:57:27.603] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 5 structureChanged: false Elapsed: 34.50832200050354ms
-Info 31   [15:57:27.603] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 32   [15:57:28.241] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 33   [15:57:28.256] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 6 structureChanged: false Elapsed: 15.274359997361898ms
-Info 34   [15:57:28.256] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 35   [15:57:29.395] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 36   [15:57:29.421] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 7 structureChanged: false Elapsed: 25.39632699638605ms
-Info 37   [15:57:29.421] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 38   [15:57:29.422] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 39   [15:57:29.440] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 8 structureChanged: false Elapsed: 18.36405400186777ms
-Info 40   [15:57:29.440] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 41   [15:57:29.981] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 42   [15:57:29.992] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 9 structureChanged: false Elapsed: 11.070002999156713ms
-Info 43   [15:57:29.992] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 44   [15:57:30.4] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 45   [15:57:30.23] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 10 structureChanged: false Elapsed: 17.892815999686718ms
-Info 46   [15:57:30.23] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 47   [15:57:31.609] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 48   [15:57:31.622] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 11 structureChanged: false Elapsed: 13.04016700014472ms
-Info 49   [15:57:31.622] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 50   [15:57:32.351] Format host information updated
-Info 51   [15:57:33.592] Format host information updated
-Info 52   [15:57:33.778] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 53   [15:57:33.788] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 12 structureChanged: false Elapsed: 9.735013000667095ms
-Info 54   [15:57:33.788] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 55   [15:57:34.272] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 56   [15:57:34.288] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 13 structureChanged: false Elapsed: 15.929976001381874ms
-Info 57   [15:57:34.288] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 58   [15:57:35.301] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 59   [15:57:35.316] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 14 structureChanged: false Elapsed: 14.321095000952482ms
-Info 60   [15:57:35.316] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 61   [15:57:35.710] Format host information updated
-Info 62   [15:57:36.936] Format host information updated
-Info 63   [15:57:36.936] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 64   [15:57:36.953] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 15 structureChanged: false Elapsed: 16.234177999198437ms
-Info 65   [15:57:36.953] Different program with same set of files:: oldProgram.structureIsReused:: 2
-Info 66   [15:57:37.153] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
-Info 67   [15:57:37.163] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 16 structureChanged: false Elapsed: 10.113464999943972ms
-Info 68   [15:57:37.163] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 14   [16:16:59.444] -----------------------------------------------
+Info 15   [16:16:59.470] Before ensureProjectForOpenFiles:
+Info 16   [16:16:59.470] After ensureProjectForOpenFiles:
+Info 17   [16:16:59.471] got projects updated in background, updating diagnostics for /home/pac/rhys/ts-auto-guard/src/index.ts
+Info 18   [16:17:0.595] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 19   [16:17:0.623] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 2 structureChanged: false Elapsed: 27.333890000008978ms
+Info 20   [16:17:0.623] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 21   [16:17:2.927] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 22   [16:17:2.952] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 3 structureChanged: false Elapsed: 24.781285999924876ms
+Info 23   [16:17:2.952] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 24   [16:17:3.968] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 25   [16:17:4.21] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4 structureChanged: false Elapsed: 52.481093999929726ms
+Info 26   [16:17:4.21] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 27   [16:17:7.614] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 28   [16:17:7.663] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 5 structureChanged: false Elapsed: 49.23350800003391ms
+Info 29   [16:17:7.663] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 30   [16:17:10.115] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 31   [16:17:10.132] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 6 structureChanged: false Elapsed: 16.53208400006406ms
+Info 32   [16:17:10.132] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 33   [16:17:11.342] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 34   [16:17:11.387] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 7 structureChanged: false Elapsed: 44.61356900003739ms
+Info 35   [16:17:11.387] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 36   [16:17:11.750] Format host information updated
+Info 37   [16:17:13.58] Format host information updated
+Info 38   [16:17:13.59] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 39   [16:17:13.115] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 8 structureChanged: false Elapsed: 55.454679000074975ms
+Info 40   [16:17:13.115] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 41   [16:17:13.350] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 42   [16:17:13.371] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 9 structureChanged: false Elapsed: 20.870741000049748ms
+Info 43   [16:17:13.372] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 44   [16:17:14.54] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 45   [16:17:14.72] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 10 structureChanged: false Elapsed: 18.31480900000315ms
+Info 46   [16:17:14.72] Different program with same set of files:: oldProgram.structureIsReused:: 2
+Info 47   [16:17:14.74] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 48   [16:17:14.114] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 11 structureChanged: false Elapsed: 39.88789899996482ms
+Info 49   [16:17:14.114] Different program with same set of files:: oldProgram.structureIsReused:: 2

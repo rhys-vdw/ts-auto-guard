@@ -985,7 +985,7 @@ function generateTypeGuard(
           .write('for (const superfluousProperty of superfluousProperties)')
           .block(() => {
             writer.write(
-              "console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property's value:`, typedObj[superfluousProperty])"
+              "console.error(`Superfluous property '${superfluousProperty}' found in object '${argumentName}', superfluous property's value:`, typedObj[superfluousProperty])"
             )
           })
       }
