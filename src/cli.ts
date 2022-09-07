@@ -20,6 +20,7 @@ interface ICliOptions {
   'import-guards'?: string
   'prevent-export-imported'?: boolean
   'guard-file-name'?: string
+  'no-superfluous-properties'?: boolean
 }
 
 const optionList = [
@@ -72,6 +73,12 @@ const optionList = [
     typeLabel: '{underline file}',
   },
   {
+    description:
+      'Generate checks for superfluous properties',
+    name: 'no-superfluous-properties',
+    type: Boolean,
+  },
+  {
     alias: 'h',
     description: 'Print this usage guide.',
     name: 'help',
@@ -120,6 +127,7 @@ async function run() {
         preventExportImported: options['prevent-export-imported'],
         shortCircuitCondition: options.shortcircuit,
         guardFileName: options['guard-file-name'],
+        noSuperfluousProperties: options['no-superfluous-properties']
       },
       project,
     })

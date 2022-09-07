@@ -11,6 +11,9 @@ import {
   StructureKind,
   Type,
   TypeAliasDeclaration,
+  PropertyName,
+  SyntaxKind,
+  CodeBlockWriter,
 } from 'ts-morph'
 
 const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
@@ -296,9 +299,9 @@ function objectTypeCondition(varName: string, callable: boolean): string {
   return callable
     ? typeOf(varName, 'function')
     : ors(
-        ands(ne(varName, 'null'), typeOf(varName, 'object')),
-        typeOf(varName, 'function')
-      )
+      ands(ne(varName, 'null'), typeOf(varName, 'object')),
+      typeOf(varName, 'function')
+    )
 }
 
 function objectCondition(
@@ -889,14 +892,15 @@ function generateTypeGuard(
   outFile: SourceFile,
   options: IProcessOptions
 ): string {
-  const { debug, shortCircuitCondition } = options
+  const { debug, shortCircuitCondition, noSuperfluousProperties } = options
   const typeName = typeDeclaration.getName()
   const defaultArgumentName = lowerFirst(typeName)
   const signatureObjName = 'obj'
   const innerObjName = 'typedObj'
+  const typeDeclarationType = typeDeclaration.getType()
   const conditions = typeConditions(
     innerObjName,
-    typeDeclaration.getType(),
+    typeDeclarationType,
     addDependency,
     project,
     '${argumentName}', // tslint:disable-line:no-invalid-template-strings
@@ -915,11 +919,87 @@ function generateTypeGuard(
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  const functionBody = `const ${innerObjName} = ${signatureObjName} as ${typeName}\nreturn (\n${
-    conditions || true
-  }\n)\n}\n`
+  const functionBody = `const ${innerObjName} = ${signatureObjName} as ${typeName}\nreturn (\n${conditions || true
+    }\n)\n}\n`
 
-  return [signature, shortCircuit, functionBody].join('')
+  let superfluousPropertyCheck = ''
+
+  if (noSuperfluousProperties) {
+    // 1: Get index names from interface or type
+    let indexNames: [string, PropertyName][]
+
+    if (typeDeclarationType.isInterface()) {
+      typeDeclaration = typeDeclaration as InterfaceDeclaration
+
+      indexNames = typeDeclaration
+        .getProperties()
+        .map(x => [x.getName(), x.getNameNode()])
+    } else if (typeDeclaration.getKind() === SyntaxKind.TypeAliasDeclaration) {
+      typeDeclaration = typeDeclaration as TypeAliasDeclaration
+
+      indexNames = typeDeclaration
+        .getChildrenOfKind(SyntaxKind.TypeLiteral)[0]
+        .getProperties()
+        .map(x => [x.getName(), x.getNameNode()])
+    } else {
+      throw new TypeError('Type declaration is not interface or type')
+    }
+
+    // 2: Generate superfluous property checks
+    const writer = new CodeBlockWriter()
+
+    writer.write('const expectedIndexes = [')
+
+    for (let [index, [name, nameNode]] of indexNames.entries()) {
+      name = name as string
+      nameNode = nameNode as PropertyName
+
+      // Turn names into strings for the array
+      if (nameNode.getKind() === SyntaxKind.Identifier) {
+        name = `'${name}'`
+      }
+
+      // console.log('index:', index, 'name:', name)
+      writer.write(index + 1 === indexNames.length ? name : `${name}, `)
+    }
+
+    writer.write(']')
+
+    // actualIndexes will contain the objects real index value, where-as expectedIndexes
+    // contains what we expect based off of the interface
+    writer.writeLine(
+      'const actualIndexes = Object.entries(typedObj).map(p => p[0])'
+    )
+
+    // Now we will clear out all the indexes that match / are correct
+    // and all ``the superfluous properties will become obvious
+    writer.writeLine(
+      'const superfluousProperties = actualIndexes.filter(p => expectedIndexes.includes(p))'
+    )
+
+    // Now we will actually check superfluousProperties and report errors if we have options.debug
+    writer.write('if (superfluousProperties.length > 0)').block(() => {
+      if (options.debug) {
+        writer
+          .write('for const (superfluousProperty of superfluousProperties)')
+          .block(() => {
+            'console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property\'s value: ${typedObj[superfluousProperty]}`)'
+          })
+      }
+      writer.write('return false')
+    })
+
+    superfluousPropertyCheck = writer.toString()
+
+    console.log(
+      '--- Superfluous Property Check -------------------------------:',
+      superfluousPropertyCheck
+    )
+  }
+
+  return [signature, shortCircuit, superfluousPropertyCheck, functionBody].join(
+    ''
+  )
 }
 
 // -- Process project --
@@ -965,6 +1045,7 @@ export interface IProcessOptions {
   shortCircuitCondition?: string
   debug?: boolean
   guardFileName?: string
+  noSuperfluousProperties?: boolean
 }
 
 export interface IGenerateOptions {
