@@ -952,6 +952,8 @@ function generateTypeGuard(
     writer.write('const expectedIndexes = [')
 
     for (let [index, [name, nameNode]] of indexNames.entries()) {
+      index++
+
       name = name as string
       nameNode = nameNode as PropertyName
 
@@ -960,8 +962,7 @@ function generateTypeGuard(
         name = `'${name}'`
       }
 
-      // console.log('index:', index, 'name:', name)
-      writer.write(index + 1 === indexNames.length ? name : `${name}, `)
+      writer.write(index === indexNames.length ? name : `${name}, `)
     }
 
     writer.write(']')
@@ -993,11 +994,6 @@ function generateTypeGuard(
     })
 
     superfluousPropertyCheck = writer.toString()
-
-    console.log(
-      '--- Superfluous Property Check -------------------------------:',
-      superfluousPropertyCheck
-    )
   }
 
   return [
