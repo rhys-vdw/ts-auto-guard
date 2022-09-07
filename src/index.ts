@@ -975,7 +975,7 @@ function generateTypeGuard(
     // Now we will clear out all the indexes that match / are correct
     // and all ``the superfluous properties will become obvious
     writer.writeLine(
-      'const superfluousProperties = actualIndexes.filter(p => expectedIndexes.includes(p))'
+      'const superfluousProperties = actualIndexes.filter(p => !expectedIndexes.includes(p))'
     )
 
     // Now we will actually check superfluousProperties and report errors if we have options.debug
@@ -985,7 +985,7 @@ function generateTypeGuard(
           .write('for (const superfluousProperty of superfluousProperties)')
           .block(() => {
             writer.write(
-              "console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property's value: ${typedObj[superfluousProperty]}`)"
+              "console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property's value:`, typedObj[superfluousProperty])"
             )
           })
       }
