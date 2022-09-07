@@ -28145,3 +28145,89 @@ Info 27501[15:01:31.909] Different program with same set of files
 Info 27502[15:01:32.183] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
 Info 27503[15:01:32.191] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 144 structureChanged: false structureIsReused:: Completely Elapsed: 8.565958000719547ms
 Info 27504[15:01:32.191] Different program with same set of files
+Info 27505[15:06:03.753] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27506[15:06:03.776] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4623 structureChanged: false structureIsReused:: Completely Elapsed: 22.509687000885606ms
+Info 27507[15:06:03.776] Different program with same set of files
+Info 27508[15:06:04.390] Format host information updated
+Info 27509[15:06:04.581] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27510[15:06:04.597] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4624 structureChanged: false structureIsReused:: Completely Elapsed: 16.613615000620484ms
+Info 27511[15:06:04.598] Different program with same set of files
+Info 27512[15:06:04.998] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27513[15:06:05.020] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 145 structureChanged: false structureIsReused:: Completely Elapsed: 22.327927999198437ms
+Info 27514[15:06:05.021] Different program with same set of files
+Info 27515[15:06:06.081] Format host information updated
+Info 27516[15:06:06.230] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27517[15:06:06.241] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4625 structureChanged: false structureIsReused:: Completely Elapsed: 11.52769099920988ms
+Info 27518[15:06:06.242] Different program with same set of files
+Info 27519[15:06:06.765] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27520[15:06:06.798] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4626 structureChanged: false structureIsReused:: Completely Elapsed: 32.88651399873197ms
+Info 27521[15:06:06.798] Different program with same set of files
+Info 27522[15:06:07.185] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27523[15:06:07.194] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 146 structureChanged: false structureIsReused:: Completely Elapsed: 8.428775999695063ms
+Info 27524[15:06:07.194] Different program with same set of files
+Info 27525[15:06:35.134] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27526[15:06:35.163] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4627 structureChanged: false structureIsReused:: Completely Elapsed: 28.90959700010717ms
+Info 27527[15:06:35.163] Different program with same set of files
+Info 27528[15:06:35.620] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27529[15:06:35.638] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 147 structureChanged: false structureIsReused:: Completely Elapsed: 18.00046500004828ms
+Info 27530[15:06:35.638] Different program with same set of files
+Info 27531[15:06:36.110] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27532[15:06:36.123] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4628 structureChanged: false structureIsReused:: Completely Elapsed: 13.12062499858439ms
+Info 27533[15:06:36.123] Different program with same set of files
+Info 27534[15:06:36.380] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27535[15:06:36.389] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 148 structureChanged: false structureIsReused:: Completely Elapsed: 8.232754999771714ms
+Info 27536[15:06:36.389] Different program with same set of files
+Info 27537[15:06:38.622] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27538[15:06:38.639] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4629 structureChanged: false structureIsReused:: Completely Elapsed: 17.173313999548554ms
+Info 27539[15:06:38.639] Different program with same set of files
+Info 27540[15:06:38.911] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27541[15:06:38.919] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 149 structureChanged: false structureIsReused:: Completely Elapsed: 8.327724000439048ms
+Info 27542[15:06:38.919] Different program with same set of files
+Info 27543[15:06:42.943] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27544[15:06:42.957] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4630 structureChanged: false structureIsReused:: Completely Elapsed: 13.973685000091791ms
+Info 27545[15:06:42.957] Different program with same set of files
+Info 27546[15:06:43.179] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27547[15:06:43.189] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 150 structureChanged: false structureIsReused:: Completely Elapsed: 10.21807000041008ms
+Info 27548[15:06:43.189] Different program with same set of files
+Info 27549[15:06:43.614] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27550[15:06:43.631] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4631 structureChanged: false structureIsReused:: Completely Elapsed: 16.627782000228763ms
+Info 27551[15:06:43.631] Different program with same set of files
+Info 27552[15:06:43.901] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27553[15:06:43.909] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 151 structureChanged: false structureIsReused:: Completely Elapsed: 7.440867999568582ms
+Info 27554[15:06:43.909] Different program with same set of files
+Info 27555[15:06:45.785] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27556[15:06:45.810] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4632 structureChanged: false structureIsReused:: Completely Elapsed: 24.49816800095141ms
+Info 27557[15:06:45.810] Different program with same set of files
+Info 27558[15:06:46.078] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27559[15:06:46.087] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 152 structureChanged: false structureIsReused:: Completely Elapsed: 9.30973800085485ms
+Info 27560[15:06:46.087] Different program with same set of files
+Info 27561[15:06:49.176] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27562[15:06:49.190] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4633 structureChanged: false structureIsReused:: Completely Elapsed: 13.71374100074172ms
+Info 27563[15:06:49.190] Different program with same set of files
+Info 27564[15:06:49.591] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27565[15:06:49.604] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 153 structureChanged: false structureIsReused:: Completely Elapsed: 13.142612999305129ms
+Info 27566[15:06:49.604] Different program with same set of files
+Info 27567[15:06:50.562] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27568[15:06:50.572] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4634 structureChanged: false structureIsReused:: Completely Elapsed: 10.809113999828696ms
+Info 27569[15:06:50.572] Different program with same set of files
+Info 27570[15:06:50.573] getCompletionData: Get current token: 0.020368000492453575
+Info 27571[15:06:50.573] getCompletionData: Is inside comment: 0.002396000549197197
+Info 27572[15:06:50.573] getCompletionData: Get previous token: 0.09956000000238419
+Info 27573[15:06:50.573] getCompletionsAtPosition: isCompletionListBlocker: 0.002213001251220703
+Info 27574[15:06:50.577] getExportInfoMap: cache hit
+Info 27575[15:06:50.580] collectAutoImports: resolved 0 module specifiers, plus 4 ambient and 2 from cache
+Info 27576[15:06:50.580] collectAutoImports: response is complete
+Info 27577[15:06:50.580] collectAutoImports: 3.4144589994102716
+Info 27578[15:06:50.580] getCompletionData: Semantic work: 7.279692001640797
+Info 27579[15:06:50.583] getCompletionsAtPosition: getCompletionEntriesFromSymbols: 2.7645579986274242
+Info 27580[15:06:50.866] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27581[15:06:50.874] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 154 structureChanged: false structureIsReused:: Completely Elapsed: 7.820930998772383ms
+Info 27582[15:06:50.874] Different program with same set of files
+Info 27583[15:06:51.868] Format host information updated
+Info 27584[15:06:53.476] Format host information updated
+Info 27585[15:06:53.784] Starting updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json
+Info 27586[15:06:53.810] Finishing updateGraphWorker: Project: /home/pac/rhys/ts-auto-guard/tsconfig.json Version: 4635 structureChanged: false structureIsReused:: Completely Elapsed: 26.19990700110793ms
+Info 27587[15:06:53.810] Different program with same set of files
+Info 27588[15:06:54.122] Starting updateGraphWorker: Project: /dev/null/inferredProject1*
+Info 27589[15:06:54.138] Finishing updateGraphWorker: Project: /dev/null/inferredProject1* Version: 155 structureChanged: false structureIsReused:: Completely Elapsed: 16.242322999984026ms
+Info 27590[15:06:54.138] Different program with same set of files

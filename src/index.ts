@@ -919,7 +919,7 @@ function generateTypeGuard(
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  const typedRedeclaration = `const ${innerObjName} = ${signatureObjName} as ${typeName}`
+  const typedRedeclaration = `const ${innerObjName} = ${signatureObjName} as ${typeName}\n`
 
   const functionBody = `\nreturn (\n${conditions || true}\n)\n}\n`
 
@@ -984,7 +984,9 @@ function generateTypeGuard(
         writer
           .write('for (const superfluousProperty of superfluousProperties)')
           .block(() => {
-            'console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property\'s value: ${typedObj[superfluousProperty]}`)'
+            writer.write(
+              "console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property's value: ${typedObj[superfluousProperty]}`)"
+            )
           })
       }
       writer.write('return false')
