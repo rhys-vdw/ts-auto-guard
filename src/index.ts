@@ -2,6 +2,7 @@
 
 import {
   EnumDeclaration,
+  EnumMember,
   ExportableNode,
   ImportDeclarationStructure,
   InterfaceDeclaration,
@@ -935,6 +936,14 @@ function generateTypeGuard(
       indexNames = typeDeclaration
         .getProperties()
         .map(x => [x.getName(), x.getNameNode()])
+    } else if (typeDeclarationType.isEnum()) {
+      // FIXME: EXPERIMENTAL
+      typeDeclaration = typeDeclaration as EnumDeclaration
+
+      indexNames = []
+      typeDeclaration.getMembers().forEach((x: EnumMember) => {
+        indexNames.push([x.getName(), x.getNameNode()])
+      })
     } else if (typeDeclaration.getKind() === SyntaxKind.TypeAliasDeclaration) {
       typeDeclaration = typeDeclaration as TypeAliasDeclaration
 

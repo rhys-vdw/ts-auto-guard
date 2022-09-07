@@ -1,0 +1,30 @@
+[19:33:40.727] Global cache location '/home/pac/.cache/typescript/4.7', safe file path '/usr/lib/node_modules/typescript/lib/typingSafeList.json', types map path /usr/lib/node_modules/typescript/lib/typesMap.json
+[19:33:40.728] Processing cache location '/home/pac/.cache/typescript/4.7'
+[19:33:40.728] Trying to find '/home/pac/.cache/typescript/4.7/package.json'...
+[19:33:40.763] Loaded content of '/home/pac/.cache/typescript/4.7/package.json': {"private":true,"dependencies":{"types-registry":"^0.1.608"},"devDependencies":{"@types/diff":"^5.0.2","@types/domready":"^1.0.0","@types/eslint":"^8.4.6","@types/he":"^1.1.2","@types/jasmine":"^4.3.0","@types/mocha":"^9.1.1","@types/pako":"^2.0.0","@types/source-map-support":"^0.5.4","@types/supports-color":"^8.1.1","@types/utf-8-validate":"^5.0.0","@types/ws":"^8.5.3"}}
+[19:33:40.763] Loaded content of '/home/pac/.cache/typescript/4.7/package-lock.json'
+[19:33:40.783] Adding entry into typings cache: 'diff' => '/home/pac/.cache/typescript/4.7/node_modules/@types/diff/index.d.ts'
+[19:33:40.788] Adding entry into typings cache: 'domready' => '/home/pac/.cache/typescript/4.7/node_modules/@types/domready/index.d.ts'
+[19:33:40.794] Adding entry into typings cache: 'eslint' => '/home/pac/.cache/typescript/4.7/node_modules/@types/eslint/index.d.ts'
+[19:33:40.796] Adding entry into typings cache: 'he' => '/home/pac/.cache/typescript/4.7/node_modules/@types/he/index.d.ts'
+[19:33:40.803] Adding entry into typings cache: 'jasmine' => '/home/pac/.cache/typescript/4.7/node_modules/@types/jasmine/index.d.ts'
+[19:33:40.806] Adding entry into typings cache: 'mocha' => '/home/pac/.cache/typescript/4.7/node_modules/@types/mocha/index.d.ts'
+[19:33:40.867] Adding entry into typings cache: 'pako' => '/home/pac/.cache/typescript/4.7/node_modules/@types/pako/index.d.ts'
+[19:33:40.871] Adding entry into typings cache: 'source-map-support' => '/home/pac/.cache/typescript/4.7/node_modules/@types/source-map-support/index.d.ts'
+[19:33:40.878] Adding entry into typings cache: 'supports-color' => '/home/pac/.cache/typescript/4.7/node_modules/@types/supports-color/index.d.ts'
+[19:33:40.882] Adding entry into typings cache: 'utf-8-validate' => '/home/pac/.cache/typescript/4.7/node_modules/@types/utf-8-validate/index.d.ts'
+[19:33:40.889] Adding entry into typings cache: 'ws' => '/home/pac/.cache/typescript/4.7/node_modules/@types/ws/index.d.ts'
+[19:33:40.889] Finished processing cache location '/home/pac/.cache/typescript/4.7'
+[19:33:40.890] Process id: 11855
+[19:33:40.890] NPM location: /usr/bin/npm (explicit '--npmLocation' not  provided)
+[19:33:40.890] validateDefaultNpmLocation: false
+[19:33:40.891] Npm config file: /home/pac/.cache/typescript/4.7/package.json
+[19:33:40.891] Updating types-registry npm package...
+[19:33:40.891] Exec: /usr/bin/npm install --ignore-scripts types-registry@latest
+[19:33:42.669]     Succeeded. stdout:
+    
+    up to date, audited 17 packages in 1s
+
+found 0 vulnerabilities
+
+[19:33:42.670] Updated types-registry npm package
