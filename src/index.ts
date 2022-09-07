@@ -919,8 +919,9 @@ function generateTypeGuard(
     ? `if (${shortCircuitCondition}) return true\n`
     : ''
 
-  const functionBody = `const ${innerObjName} = ${signatureObjName} as ${typeName}\nreturn (\n${conditions || true
-    }\n)\n}\n`
+  const typedRedeclaration = `const ${innerObjName} = ${signatureObjName} as ${typeName}`
+
+  const functionBody = `\nreturn (\n${conditions || true}\n)\n}\n`
 
   let superfluousPropertyCheck = ''
 
@@ -981,7 +982,7 @@ function generateTypeGuard(
     writer.write('if (superfluousProperties.length > 0)').block(() => {
       if (options.debug) {
         writer
-          .write('for const (superfluousProperty of superfluousProperties)')
+          .write('for (const superfluousProperty of superfluousProperties)')
           .block(() => {
             'console.error(`Superfluous property ${superfluousProperty} found in object ${argumentName}, superfluous property\'s value: ${typedObj[superfluousProperty]}`)'
           })
@@ -997,9 +998,13 @@ function generateTypeGuard(
     )
   }
 
-  return [signature, shortCircuit, superfluousPropertyCheck, functionBody].join(
-    ''
-  )
+  return [
+    signature,
+    shortCircuit,
+    typedRedeclaration,
+    superfluousPropertyCheck,
+    functionBody,
+  ].join('')
 }
 
 // -- Process project --
