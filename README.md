@@ -140,6 +140,15 @@ export function isPerson(obj: unknown): obj is Person {
 
 Using the `shortcircuit` option in combination with [uglify-js's `dead_code` and `global_defs` options](https://github.com/mishoo/UglifyJS2#compress-options) will let you omit the long and complicated checks from your production code.
 
+## Disallowing superfluous properties
+
+Use the no superfluous properties flag to disallow objects from having extra properties that are not in the interface / type that they are expected to match,
+you don't need to do anything special for this to work, just set the flag when running ts-auto-guard:
+
+```
+$ ts-auto-guard --no-superfluous-properties
+```
+
 ## Change Guard File Name
 
 ts-auto-guard will create a `.guard.ts` file by default, but this can be overriden.
