@@ -1,15 +1,16 @@
-import test from 'tape'
-import { Project } from 'ts-morph'
-import { minify, MinifyOptions } from 'uglify-js'
-import { IProcessOptions, processProject } from '../src'
+// import test from 'tape'
+// import { Project } from 'ts-morph'
+import { MinifyOptions } from 'uglify-js'
+import { IProcessOptions } from '../src'
+import fs from 'fs'
 
-function createProject(): Project {
-  return new Project({
-    skipAddingFilesFromTsConfig: true,
-    compilerOptions: { strict: true },
-    useInMemoryFileSystem: true,
-  })
-}
+// function createProject(): Project {
+//   return new Project({
+//     skipAddingFilesFromTsConfig: true,
+//     compilerOptions: { strict: true },
+//     useInMemoryFileSystem: true,
+//   })
+// }
 
 interface ITestOptions {
   skip?: boolean
@@ -19,74 +20,54 @@ interface ITestOptions {
   throws?: RegExp | typeof Error
 }
 
-function testProcessProject(
+function replaceAll(str: string, match: string, replacement: string) {
+  return str.split(match).join(replacement)
+}
+
+const src = fs.readFileSync(__filename, 'utf-8')
+const lines = src.split('\r\n')
+
+export function testProcessProject(
   typeDescription: string,
-  input: { readonly [filename: string]: string },
-  output: { readonly [filename: string]: string | null },
-  { skip, only, options, minifyOptions, throws }: ITestOptions = {}
+  _: { readonly [filename: string]: string },
+  _0: { readonly [filename: string]: string | null },
+  _1: ITestOptions = {}
 ) {
-  const fn = skip ? test.skip : only ? test.only : test
-  fn(typeDescription, t => {
-    const project = createProject()
-    Object.entries(input).forEach(([filePath, content]) => {
-      project.createSourceFile(filePath, content)
-    })
-    project.saveSync()
-
-    const expectedFilenames = new Set(Object.keys(output))
-
-    if (throws) {
-      t.throws(() => {
-        processProject(project, options)
-      }, throws)
-      t.end()
-      return
-    }
-
-    t.doesNotThrow(() => {
-      processProject(project, options)
-    })
-
-    for (const sourceFile of project.getSourceFiles()) {
-      const filePath = sourceFile.getFilePath().slice(1)
-      const expectedRaw = output[filePath]
-      if (expectedRaw === undefined) {
-        t.fail(`unexpected file ${filePath}`)
-      } else if (expectedRaw === null) {
-        // This file is expected, but must not have been changed
-        expectedFilenames.delete(filePath)
-        const sourceText = sourceFile.getFullText()
-        t.equal(sourceText, input[filePath], `${filePath} should not change`)
-      } else {
-        // This is a new file
-        expectedFilenames.delete(filePath)
-        const expectedFile = project.createSourceFile(
-          `${filePath}.expected`,
-          expectedRaw
-        )
-        let sourceText: string
-        if (minifyOptions !== undefined) {
-          const emitOutput = sourceFile.getEmitOutput()
-          const result = minify(
-            emitOutput.getOutputFiles()[0].getText(),
-            minifyOptions
-          )
-          t.error(result.error, 'UglifyJS should succeed')
-          sourceText = result.code
-        } else {
-          expectedFile.formatText()
-          sourceText = sourceFile.getText()
-        }
-
-        const expectedText = expectedFile.getText()
-        t.equal(sourceText, expectedText, `${filePath} should match`)
+  const name = replaceAll(replaceAll(typeDescription, ' ', '_'), '.', '')
+  let titleLine: number | false = false
+  let endLine: number | false = false
+  const blockLines = []
+  blockLines.push("import {testProcessProject} from '../generate';")
+  blockLines.push('')
+  for (let i = 0; i < lines.length; i++) {
+    if (titleLine === false) {
+      const titleI = lines[i].indexOf(typeDescription)
+      if (titleI > 0) {
+        titleLine = i
+        blockLines.push(lines[i - 1])
+        blockLines.push(lines[i])
+      }
+    } else {
+      blockLines.push(lines[i])
+      if (lines[i] === ')') {
+        endLine = i
+        break
       }
     }
-    for (const filePath of expectedFilenames) {
-      t.fail(`${filePath} not found`)
+  }
+  if (titleLine === false || endLine === false) {
+    console.log('skipped : ' + name)
+  } else {
+    try {
+      fs.writeFileSync(
+        __dirname + '/features/' + name + '.ts',
+        blockLines.join('\r\n'),
+        'utf-8'
+      )
+    } catch (e) {
+      console.log('skipped (due to error) : ' + name)
     }
-    t.end()
-  })
+  }
 }
 
 testProcessProject(
