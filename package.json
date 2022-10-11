@@ -6,7 +6,7 @@
   "repository": "github:rhys-vdw/ts-auto-guard",
   "main": "lib/index.js",
   "scripts": {
-    "test": "tape -r ts-node/register tests/**/*.ts",
+    "test": "cross-env NODE_ENV=test && npm run lint && npm run format:check && tape -r ts-node/register tests/**/*.test.ts | tap-diff",
     "build": "tsc",
     "prepare": "npm run build",
     "lint": "eslint .",
