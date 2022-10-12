@@ -10,6 +10,7 @@ testProcessProject(
   },
   {
     'test.ts': null,
+    // language=TypeScript
     'test.guard.ts': `
       import { TestType } from "./test";
 
@@ -26,5 +27,6 @@ testProcessProject(
           )
       }
       `,
-  }
+  },
+  { only: true }
 )

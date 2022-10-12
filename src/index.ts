@@ -38,7 +38,7 @@ function findExportableNode(type: Type): (ExportableNode & Node) | null {
     symbol
       .getDeclarations()
       .reduce<Node[]>((acc, node) => [...acc, node, ...node.getAncestors()], [])
-      .filter(Node.isExportableNode)
+      .filter(Node.isExportable)
       .find(n => n.isExported()) || null
   )
 }
@@ -450,15 +450,26 @@ To disable this warning, put comment "${suppressComment}" before the declaration
         )
       )
 
-      const typeArguments = type.getAliasTypeArguments()
+      if (typeDeclarations && Node.isMappedTypeNode(typeDeclarations[0])) {
+        const decl = typeDeclarations[0]
+        console.log(decl)
+        // typeDeclarations[0].getTypeName().getType()
+      }
+
+      const typeArguments =
+        typeDeclarations &&
+        typeDeclarations[0].getType().getAliasTypeArguments()
       if (
-        type.getAliasSymbol()?.getName() === 'Record' &&
-        typeArguments.length === 2
+        typeDeclarations &&
+        Node.isMappedTypeNode(typeDeclarations[0]) &&
+        typeDeclarations[0].getType().getAliasSymbol()?.getName() ===
+          'Record' &&
+        typeDeclarations[0].getType().getAliasTypeArguments().length === 2
       ) {
         conditions.push(
           indexSignaturesCondition(
             varName,
-            [{ keyType: typeArguments[0], type: typeArguments[1] }],
+            [{ keyType: typeArguments![0], type: typeArguments![1] }],
             propertySignatures,
             addDependency,
             project,
