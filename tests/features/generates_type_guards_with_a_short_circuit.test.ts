@@ -12,7 +12,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-    import { Foo } from "./test";
+    import type { Foo } from "./test";
 
     export function isFoo(obj: unknown): obj is Foo {
         if (DEBUG) return true

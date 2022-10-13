@@ -19,7 +19,7 @@ export interface Empty { }
     export interface Empty {}
     export { CustomGuardAlias };`,
     'test.guard.ts': `
-    import { Empty } from "./test";
+    import type { Empty } from "./test";
 
     export function isEmpty(obj: unknown): obj is Empty {
         const typedObj = obj as Empty
