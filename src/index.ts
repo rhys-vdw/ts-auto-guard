@@ -1160,6 +1160,7 @@ export function processProject(
               kind: StructureKind.ImportDeclaration,
               moduleSpecifier,
               namedImports,
+              isTypeOnly: true,
             })
             return structures
           },
