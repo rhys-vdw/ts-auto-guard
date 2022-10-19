@@ -449,27 +449,42 @@ To disable this warning, put comment "${suppressComment}" before the declaration
           options
         )
       )
-
-      if (typeDeclarations && Node.isMappedTypeNode(typeDeclarations[0])) {
-        const decl = typeDeclarations[0]
-        console.log(decl)
-        // typeDeclarations[0].getTypeName().getType()
-      }
-
-      const typeArguments =
-        typeDeclarations &&
-        typeDeclarations[0].getType().getAliasTypeArguments()
-      if (
-        typeDeclarations &&
-        Node.isMappedTypeNode(typeDeclarations[0]) &&
-        typeDeclarations[0].getType().getAliasSymbol()?.getName() ===
-          'Record' &&
-        typeDeclarations[0].getType().getAliasTypeArguments().length === 2
-      ) {
+      const stringIndexType = type.getStringIndexType()
+      if (stringIndexType) {
+        const stringType = (project as any)._context.compilerFactory.getType(
+          (project as any)
+            .getProgram()
+            .compilerObject.getTypeChecker()
+            .getStringType()
+        )
         conditions.push(
           indexSignaturesCondition(
             varName,
-            [{ keyType: typeArguments![0], type: typeArguments![1] }],
+            [{ keyType: stringType, type: stringIndexType }],
+            propertySignatures,
+            addDependency,
+            project,
+            path,
+            arrayDepth,
+            records,
+            outFile,
+            options
+          )
+        )
+      }
+
+      const numberIndexType = type.getNumberIndexType()
+      if (numberIndexType) {
+        const numberType = (project as any)._context.compilerFactory.getType(
+          (project as any)
+            .getProgram()
+            .compilerObject.getTypeChecker()
+            .getNumberType()
+        )
+        conditions.push(
+          indexSignaturesCondition(
+            varName,
+            [{ keyType: numberType, type: numberIndexType }],
             propertySignatures,
             addDependency,
             project,
@@ -1033,6 +1048,8 @@ export function processProject(
   project
     .getSourceFiles(`./**/*.${guardFileName}.ts`)
     .forEach(sourceFile => deleteGuardFile(sourceFile))
+
+  // project.getTypeChecker().getGlobalT
 
   const sourceFiles = project.getSourceFiles()
   // Sort source files by dependencies - dependencies before dependants
