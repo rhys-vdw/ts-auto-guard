@@ -1057,8 +1057,6 @@ export function processProject(
     .getSourceFiles(`./**/*.${guardFileName}.ts`)
     .forEach(sourceFile => deleteGuardFile(sourceFile))
 
-  // project.getTypeChecker().getGlobalT
-
   const sourceFiles = project.getSourceFiles()
   // Sort source files by dependencies - dependencies before dependants
   const orderedSourceFiles: SourceFile[] = []
