@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import { Project } from 'ts-morph'
 import { processProject } from '../src'
+
 const WorkingDir = path.dirname(__filename)
 const TestFile = 'ImportTest.ts'
 const TestFilePath = path.join(WorkingDir, TestFile)
@@ -11,24 +12,26 @@ interface TestDefinition {
   message: string
   inputFile: string
   guardFile: string
+  only?: true
 }
 
 // Test blueprint for running different test definitions
 class Blueprint {
-  inputContents: string
-  expectedContents: string
-  message: string
-  constructor(message: string, inputFile: string, guardFile: string) {
-    this.inputContents = inputFile
-    this.expectedContents = guardFile
-    this.message = message
-  }
+  constructor(
+    public message: string,
+    public inputContents: string,
+    public expectedContents: string,
+    public only: true | undefined
+  ) {}
+
   createTestFile() {
     fs.writeFileSync(TestFilePath, this.inputContents)
   }
+
   deleteTestFile() {
     fs.unlinkSync(TestFilePath)
   }
+
   buildProject() {
     const project = new Project({
       skipAddingFilesFromTsConfig: true,
@@ -39,10 +42,22 @@ class Blueprint {
     project.saveSync()
     return project
   }
+
   run() {
-    test(this.message, t => {
+    const fn = this.only ? test.only : test
+    fn(this.message, t => {
       this.createTestFile()
       const project = this.buildProject()
+
+      const syntacticDiagnostics = project
+        .getLanguageService()
+        .compilerObject.getSyntacticDiagnostics(TestFilePath)
+      t.deepEquals(syntacticDiagnostics, [])
+      const semanticDiagnostics = project
+        .getLanguageService()
+        .compilerObject.getSemanticDiagnostics(TestFilePath)
+      t.deepEquals(semanticDiagnostics, [])
+
       t.doesNotThrow(() => {
         processProject(project, { exportAll: true })
       })
@@ -56,7 +71,7 @@ class Blueprint {
 }
 
 function genBlueprint(def: TestDefinition) {
-  return new Blueprint(def.message, def.inputFile, def.guardFile)
+  return new Blueprint(def.message, def.inputFile, def.guardFile, def.only)
 }
 
 // Define grouping of tests
@@ -64,9 +79,9 @@ const blueprints = [
   genBlueprint({
     message:
       'interfaces from scoped package in node modules requires no import',
-    inputFile: `import { InMemoryFileSystemHostOptions } from "@ts-morph/common";
+    inputFile: `import { DirEntry } from "@ts-morph/common";
 export interface Foo {
-  target: InMemoryFileSystemHostOptions
+  target: DirEntry
 }`,
     guardFile: `import { Foo } from "./ImportTest";
 
@@ -79,9 +94,14 @@ export function isFoo(obj: unknown): obj is Foo {
         (typedObj["target"] !== null &&
             typeof typedObj["target"] === "object" ||
             typeof typedObj["target"] === "function") &&
-        (typeof typedObj["target"]["skipLoadingLibFiles"] === "undefined" ||
-            typedObj["target"]["skipLoadingLibFiles"] === false ||
-            typedObj["target"]["skipLoadingLibFiles"] === true)
+        typeof typedObj["target"]["path"] === "string" &&
+        (typedObj["target"]["path"] !== null &&
+            typeof typedObj["target"]["path"] === "object" ||
+            typeof typedObj["target"]["path"] === "function") &&
+        typeof typedObj["target"]["path"]["_standardizedFilePathBrand"] === "undefined" &&
+        typeof typedObj["target"]["isFile"] === "boolean" &&
+        typeof typedObj["target"]["isDirectory"] === "boolean" &&
+        typeof typedObj["target"]["isSymlink"] === "boolean"
     )
 }
 `,

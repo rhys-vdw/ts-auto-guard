@@ -17,6 +17,5 @@ testProcessProject(
         typeof obj === "string" && /.*@.*\\..*/.test('a@b.c')
     )
 }`,
-  },
-  { only: true }
+  }
 )

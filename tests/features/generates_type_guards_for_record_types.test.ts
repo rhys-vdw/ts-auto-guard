@@ -27,6 +27,5 @@ testProcessProject(
           )
       }
       `,
-  },
-  { only: true }
+  }
 )
