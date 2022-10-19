@@ -1030,6 +1030,14 @@ export async function generate({
 
 type Guardable = InterfaceDeclaration | TypeAliasDeclaration | EnumDeclaration
 
+function isGuardable(value: Node): value is Guardable {
+  return (
+    Node.isTypeAliasDeclaration(value) ||
+    Node.isInterfaceDeclaration(value) ||
+    Node.isEnumDeclaration(value)
+  )
+}
+
 interface IRecord {
   guardName: string
   typeDeclaration: Guardable
@@ -1090,18 +1098,10 @@ export function processProject(
 
     const functions = []
     const exports = Array.from(sourceFile.getExportedDeclarations().values())
-    const allTypesDeclarations: Guardable[] = []
-    for (const exp of exports) {
-      for (const singleExport of exp) {
-        if (
-          Node.isTypeAliasDeclaration(singleExport) ||
-          Node.isInterfaceDeclaration(singleExport) ||
-          Node.isEnumDeclaration(singleExport)
-        ) {
-          allTypesDeclarations.push(singleExport)
-        }
-      }
-    }
+      .flat()
+      .filter(ex => ex.getSourceFile() === sourceFile)
+
+    const allTypesDeclarations = exports.filter(isGuardable)
 
     const outFile = project.createSourceFile(
       outFilePath(sourceFile.getFilePath(), guardFileName),
@@ -1130,6 +1130,7 @@ export function processProject(
             options
           )
         )
+
         addDependency(
           sourceFile,
           typeDeclaration.getName(),
