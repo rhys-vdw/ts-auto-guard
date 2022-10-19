@@ -12,12 +12,11 @@ testProcessProject(
     'test.guard.ts': `
     import { Email } from "./test";
 
-    import { Email } from "./Email";
-
-    export function Email(obj: any, _argumentName?: string): obj is Email {
+    export function isEmail(obj: any, _argumentName?: string): obj is Email {
     return (
-        typeof obj === "\`\${string}@\${string}.\${string}\`"
+        typeof obj === "string" && /.*@.*\\..*/.test('a@b.c')
     )
 }`,
-  }
+  },
+  { only: true }
 )
