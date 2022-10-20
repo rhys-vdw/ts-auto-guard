@@ -301,6 +301,21 @@ function objectTypeCondition(varName: string, callable: boolean): string {
       )
 }
 
+function indexKeyTypeToString(type: Type): IndexKeyType {
+  switch (true) {
+    case type.isString():
+      return 'string'
+    case type.isNumber():
+      return 'number'
+    case type.isAny():
+      return 'any'
+    default:
+      throw new Error(
+        `Invalid type for index key: ${type.getText()}. Only string or number are expected.`
+      )
+  }
+}
+
 function objectCondition(
   varName: string,
   type: Type,
@@ -406,24 +421,10 @@ To disable this warning, put comment "${suppressComment}" before the declaration
       conditions.push(
         indexSignaturesCondition(
           varName,
-          indexSignatures.map(x => {
-            const keyType = x.keyType.isString()
-              ? 'string'
-              : x.keyType.isNumber()
-              ? 'number'
-              : x.keyType.isAny()
-              ? 'any'
-              : undefined
-            if (keyType === undefined) {
-              throw new Error(
-                `Invalid type for index key: ${x.keyType.getText()}. Only string or number are expected.`
-              )
-            }
-            return {
-              keyType,
-              type: x.type,
-            }
-          }),
+          indexSignatures.map(x => ({
+            keyType: indexKeyTypeToString(x.keyType),
+            type: x.type,
+          })),
           properties,
           addDependency,
           project,
@@ -787,6 +788,7 @@ function propertiesConditions(
     .filter(v => v !== null) as string[]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function assertNever<T>(_: never): T {
   throw new Error('should be unreachable.')
 }
