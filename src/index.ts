@@ -406,7 +406,24 @@ To disable this warning, put comment "${suppressComment}" before the declaration
       conditions.push(
         indexSignaturesCondition(
           varName,
-          indexSignatures,
+          indexSignatures.map(x => {
+            const keyType = x.keyType.isString()
+              ? 'string'
+              : x.keyType.isNumber()
+              ? 'number'
+              : x.keyType.isAny()
+              ? 'any'
+              : undefined
+            if (keyType === undefined) {
+              throw new Error(
+                `Invalid type for index key: ${x.keyType.getText()}. Only string or number are expected.`
+              )
+            }
+            return {
+              keyType,
+              type: x.type,
+            }
+          }),
           properties,
           addDependency,
           project,
@@ -451,16 +468,10 @@ To disable this warning, put comment "${suppressComment}" before the declaration
       )
       const stringIndexType = type.getStringIndexType()
       if (stringIndexType) {
-        const stringType = (project as any)._context.compilerFactory.getType(
-          (project as any)
-            .getProgram()
-            .compilerObject.getTypeChecker()
-            .getStringType()
-        )
         conditions.push(
           indexSignaturesCondition(
             varName,
-            [{ keyType: stringType, type: stringIndexType }],
+            [{ keyType: 'string', type: stringIndexType }],
             propertySignatures,
             addDependency,
             project,
@@ -475,16 +486,10 @@ To disable this warning, put comment "${suppressComment}" before the declaration
 
       const numberIndexType = type.getNumberIndexType()
       if (numberIndexType) {
-        const numberType = (project as any)._context.compilerFactory.getType(
-          (project as any)
-            .getProgram()
-            .compilerObject.getTypeChecker()
-            .getNumberType()
-        )
         conditions.push(
           indexSignaturesCondition(
             varName,
-            [{ keyType: numberType, type: numberIndexType }],
+            [{ keyType: 'number', type: numberIndexType }],
             propertySignatures,
             addDependency,
             project,
@@ -782,12 +787,31 @@ function propertiesConditions(
     .filter(v => v !== null) as string[]
 }
 
+export function assertNever<T>(_: never): T {
+  throw new Error('should be unreachable.')
+}
+
+function signatureKeyConditions(
+  keyType: IndexKeyType,
+  varName: string
+): string | null {
+  if (keyType === 'string') {
+    return typeOf(varName, 'string')
+  } else if (keyType === 'number') {
+    return typeOf(varName, 'number')
+  } else if (keyType === 'any') {
+    return null
+  } else {
+    return assertNever(keyType)
+  }
+}
+
 function indexSignatureConditions(
   objName: string,
   keyName: string,
   valueUsed: () => void,
   keyUsed: () => void,
-  index: { keyType: Type; type: Type },
+  index: { keyType: IndexKeyType; type: Type },
   addDependency: IAddDependency,
   project: Project,
   path: string,
@@ -798,7 +822,6 @@ function indexSignatureConditions(
 ): string | null {
   const { debug } = options
   const expectedType = index.type.getText()
-  const expectedKeyType = index.keyType.getText()
   const conditions = typeConditions(
     objName,
     index.type,
@@ -811,18 +834,7 @@ function indexSignatureConditions(
     outFile,
     options
   )
-  const keyConditions = typeConditions(
-    keyName,
-    index.keyType,
-    addDependency,
-    project,
-    `${path} ${keyName}`,
-    arrayDepth,
-    true,
-    records,
-    outFile,
-    options
-  )
+  const keyConditions = signatureKeyConditions(index.keyType, keyName)
   if (conditions) {
     valueUsed()
   }
@@ -838,9 +850,7 @@ function indexSignatureConditions(
       )}, ${objName})`
     const keyEvaluation =
       keyConditions &&
-      `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${JSON.stringify(
-        expectedKeyType
-      )}, ${keyName})`
+      `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${index.keyType}, ${keyName})`
     if (evaluation || keyEvaluation) {
       keyUsed()
     }
@@ -856,9 +866,11 @@ function indexSignatureConditions(
   return conditions || keyConditions
 }
 
+type IndexKeyType = 'string' | 'number' | 'any'
+
 function indexSignaturesCondition(
   varName: string,
-  indexSignatures: ReadonlyArray<{ keyType: Type; type: Type }>,
+  indexSignatures: ReadonlyArray<{ keyType: IndexKeyType; type: Type }>,
   properties: ReadonlyArray<{ name: string; type: Type }>,
   addDependency: IAddDependency,
   project: Project,
