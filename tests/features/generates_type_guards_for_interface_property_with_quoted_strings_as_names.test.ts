@@ -25,6 +25,5 @@ testProcessProject(
             typeof typedObj["double-quoted"] === "number"
         )
     }`,
-  },
-  { only: true }
+  }
 )
