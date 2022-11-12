@@ -7,9 +7,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3.5.1
         with:
-          node-version: 12
+          node-version: 18
           registry-url: https://registry.npmjs.org/
       - run: npm ci
       - run: npm test
