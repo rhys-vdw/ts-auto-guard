@@ -400,7 +400,10 @@ To disable this warning, put comment "${suppressComment}" before the declaration
     const properties = [
       ...declaration.getProperties(),
       ...declaration.getMethods(),
-    ].map(p => ({ name: p.getName(), type: p.getType() }))
+    ].map(p => ({
+      name: p.getSymbol()?.getEscapedName() ?? p.getName(),
+      type: p.getType(),
+    }))
     conditions.push(
       ...propertiesConditions(
         varName,
