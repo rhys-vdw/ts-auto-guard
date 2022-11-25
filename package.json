@@ -19,8 +19,6 @@
   "author": "Rhys van der Waerden",
   "license": "MIT",
   "dependencies": {
-    "@types/command-line-args": "^5.0.0",
-    "@types/command-line-usage": "^5.0.1",
     "command-line-args": "^5.1.1",
     "command-line-usage": "^6.1.0",
     "ts-morph": "^16.0.0",
@@ -28,7 +26,9 @@
   },
   "devDependencies": {
     "@detools/tap-diff": "^0.2.2",
-    "@types/node": "^14.6.0",
+    "@types/command-line-args": "^5.0.0",
+    "@types/command-line-usage": "^5.0.1",
+    "@types/node": "^18.11.9",
     "@types/tape": "^4.13.0",
     "@types/uglify-js": "^3.11.1",
     "@typescript-eslint/eslint-plugin": "^5.42.1",
