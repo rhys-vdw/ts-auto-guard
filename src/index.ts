@@ -400,7 +400,10 @@ To disable this warning, put comment "${suppressComment}" before the declaration
     const properties = [
       ...declaration.getProperties(),
       ...declaration.getMethods(),
-    ].map(p => ({ name: p.getName(), type: p.getType() }))
+    ].map(p => ({
+      name: p.getSymbol()?.getEscapedName() ?? p.getName(),
+      type: p.getType(),
+    }))
     conditions.push(
       ...propertiesConditions(
         varName,
@@ -1176,9 +1179,8 @@ export function processProject(
               return structures
             }
 
-            let moduleSpecifier = outFile.getRelativePathAsModuleSpecifierTo(
-              importFile
-            )
+            let moduleSpecifier =
+              outFile.getRelativePathAsModuleSpecifierTo(importFile)
 
             if (importFile.isInNodeModules()) {
               // Packages within node_modules should not be referenced via relative path
@@ -1227,24 +1229,22 @@ export function processProject(
             .replace(/\.(ts|tsx|d\.ts)$/, '')
         const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
         const exportStatement = `export { ${options.importGuards} };`
-        const {
-          hasImport,
-          hasExport,
-          statements,
-        } = sourceFile.getStatements().reduce(
-          (reduced, node) => {
-            const nodeText = node.getText().replace(/\s{2,}/g, ' ')
-            reduced.hasImport ||= nodeText.includes(
-              `import * as ${options.importGuards}`
-            )
-            reduced.hasExport ||= nodeText.includes(
-              `export { ${options.importGuards} }`
-            )
-            reduced.statements += 1
-            return reduced
-          },
-          { hasImport: false, hasExport: false, statements: 0 }
-        )
+        const { hasImport, hasExport, statements } = sourceFile
+          .getStatements()
+          .reduce(
+            (reduced, node) => {
+              const nodeText = node.getText().replace(/\s{2,}/g, ' ')
+              reduced.hasImport ||= nodeText.includes(
+                `import * as ${options.importGuards}`
+              )
+              reduced.hasExport ||= nodeText.includes(
+                `export { ${options.importGuards} }`
+              )
+              reduced.statements += 1
+              return reduced
+            },
+            { hasImport: false, hasExport: false, statements: 0 }
+          )
         if (!hasImport) {
           sourceFile.insertStatements(0, importStatement)
         }
