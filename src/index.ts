@@ -855,7 +855,9 @@ function indexSignatureConditions(
       )}, ${objName})`
     const keyEvaluation =
       keyConditions &&
-      `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${index.keyType}, ${keyName})`
+      `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${JSON.stringify(
+        index.keyType
+      )}, ${keyName})`
     if (evaluation || keyEvaluation) {
       keyUsed()
     }
