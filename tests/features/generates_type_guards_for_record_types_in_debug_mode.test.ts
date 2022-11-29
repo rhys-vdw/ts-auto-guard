@@ -43,7 +43,7 @@ testProcessProject(
   },
   {
     options: {
-      debug: true
-    }
+      debug: true,
+    },
   }
 )
