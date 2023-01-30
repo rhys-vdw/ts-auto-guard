@@ -175,7 +175,7 @@ function ne(a: string, b: string): string {
 }
 
 function typeOf(varName: string, type: string): string {
-  return eq(`typeof ${varName}`, `"${type}"`)
+  return eq(`typeof ${varName}`, `'${type}'`)
 }
 
 function typeUnionConditions(
@@ -733,8 +733,8 @@ function propertyConditions(
   const propertyName = property.name
 
   const strippedName = propertyName.replace(/"/g, '')
-  const varName = `${objName}["${strippedName}"]`
-  const propertyPath = `${path}["${strippedName}"]`
+  const varName = `${objName}['${strippedName}']`
+  const propertyPath = `${path}['${strippedName}']`
 
   let expectedType = property.type.getText()
   const conditions = typeConditions(
@@ -1229,7 +1229,7 @@ export function processProject(
             .split('/')
             .reverse()[0]
             .replace(/\.(ts|tsx|d\.ts)$/, '')
-        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
+        const importStatement = `import * as ${options.importGuards} from '${relativeOutPath}';`
         const exportStatement = `export { ${options.importGuards} };`
         const { hasImport, hasExport, statements } = sourceFile
           .getStatements()
