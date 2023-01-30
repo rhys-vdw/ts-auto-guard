@@ -265,7 +265,7 @@ function arrayCondition(
   const indexIdentifier = `i${arrayDepth}`
   const elementPath = `${path}[\${${indexIdentifier}}]`
   const conditions = typeConditions(
-    'e',
+    'element',
     arrayType,
     addDependency,
     project,
@@ -288,7 +288,7 @@ function arrayCondition(
     : ''
   return ands(
     `Array.isArray(${varName})`,
-    `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
+    `${varName}.every((element: any${secondArg}) =>\n${conditions}\n)`
   )
 }
 
