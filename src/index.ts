@@ -288,7 +288,7 @@ function arrayCondition(
     : ''
   return ands(
     `Array.isArray(${varName})`,
-    `${varName}.every((e: any${secondArg}) =>\n${conditions}\n)`
+    `${varName}.every((e: unknown{secondArg}) =>\n${conditions}\n)`
   )
 }
 
