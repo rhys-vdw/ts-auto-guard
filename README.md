@@ -13,13 +13,13 @@ This tool aims to allow developers to verify data from untyped sources to ensure
 ### Yarn
 
 ```
-$ yarn add -D ts-auto-guard
+yarn add -D ts-auto-guard
 ```
 
 ### npm
 
 ```
-$ npm install --save-dev ts-auto-guard
+npm install --save-dev ts-auto-guard
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ $ npm install --save-dev ts-auto-guard
 Specify which types to process (see below) and run the CLI tool in the same folder as your project's `tsconfig.json` (optionally passing in paths to the files you'd like it to parse).
 
 ```sh
-$ ts-auto-guard ./my-project/Person.ts
+ts-auto-guard ./my-project/Person.ts
 ```
 
 See generated files alongside your annotated files:
@@ -94,7 +94,7 @@ The [JSDoc @link tag](https://jsdoc.app/tags-link.html) is also supported: `@see
 Use `--export-all` parameter to process all exported types:
 
 ```
-$ ts-auto-guard --export-all 'src/domain/*.ts'
+ts-auto-guard --export-all 'src/domain/*.ts'
 ```
 
 ## Debug mode
@@ -102,7 +102,7 @@ $ ts-auto-guard --export-all 'src/domain/*.ts'
 Use debug mode to help work out why your type guards are failing in development. This will change the output type guards to log the path, expected type and value of failing guards.
 
 ```
-$ ts-auto-guard --debug
+ts-auto-guard --debug
 ```
 
 ```ts
@@ -116,7 +116,7 @@ ts-auto-guard also supports a `shortcircuit` flag that will cause all guards
 to always return `true`.
 
 ```
-$ ts-auto-guard --shortcircuit="process.env.NODE_ENV === 'production'"
+ts-auto-guard --shortcircuit="process.env.NODE_ENV === 'production'"
 ```
 
 This will result in the following:
@@ -157,7 +157,7 @@ ts-auto-guard supports an `ìmport-guards` flag. This flag will add an import st
 If you would like to override the default behavior and not have the type guards exported from source use the `prevent-export-imported` flag with the `import-guards` flag.
 
 ```
-$ ts-auto-guard --import-guards="Guards"
+ts-auto-guard --import-guards="Guards"
 ```
 
 Will result in the following being added to your source code.
