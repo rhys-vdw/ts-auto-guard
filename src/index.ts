@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { FileUtils } from "@ts-morph/common";
+import { FileUtils } from '@ts-morph/common'
 import {
   EnumDeclaration,
   ExportableNode,
