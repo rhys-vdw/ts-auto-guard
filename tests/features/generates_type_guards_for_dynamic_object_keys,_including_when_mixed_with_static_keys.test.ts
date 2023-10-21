@@ -32,7 +32,7 @@ testProcessProject(
                       typeof key === "string" ||
                       (value === "number" ||
                           value === "also-dynamic") &&
-                      typeof key === "number"))
+                      (+key).toString() === key))
           )
       }
       `,

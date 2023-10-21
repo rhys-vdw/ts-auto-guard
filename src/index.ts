@@ -805,7 +805,7 @@ function signatureKeyConditions(
   if (keyType === 'string') {
     return typeOf(varName, 'string')
   } else if (keyType === 'number') {
-    return typeOf(varName, 'number')
+    return `(+${varName}).toString() === ${varName}`
   } else if (keyType === 'any') {
     return null
   } else {
