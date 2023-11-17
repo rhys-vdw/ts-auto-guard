@@ -22,6 +22,11 @@ yarn add -D ts-auto-guard
 npm install --save-dev ts-auto-guard
 ```
 
+## TypeScript configuration
+
+It makes sense to use this library in `strict` mode. Make sure to turn on the [strict mode family](https://www.typescriptlang.org/tsconfig#strict) options by defining `"strict": true` in `tsconfig.json` under `compilerOptions`.
+If you have any problems check that strict mode family options, such as `strictNullChecks`, are not explicitly set to false. Check [these](https://github.com/rhys-vdw/ts-auto-guard/issues/120) [issues](https://github.com/rhys-vdw/ts-auto-guard/issues/152) for more info.
+
 ## Usage
 
 Specify which types to process (see below) and run the CLI tool in the same folder as your project's `tsconfig.json` (optionally passing in paths to the files you'd like it to parse).
