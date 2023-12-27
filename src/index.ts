@@ -6,8 +6,10 @@ import {
   ExportableNode,
   ImportDeclarationStructure,
   InterfaceDeclaration,
+  MethodSignature,
   Node,
   Project,
+  PropertySignature,
   SourceFile,
   StructureKind,
   Type,
@@ -41,6 +43,13 @@ function findExportableNode(type: Type): (ExportableNode & Node) | null {
       .reduce<Node[]>((acc, node) => [...acc, node, ...node.getAncestors()], [])
       .filter(Node.isExportable)
       .find(n => n.isExported()) || null
+  )
+}
+
+function propertyName(signature: PropertySignature | MethodSignature): string {
+  return (
+    signature.getNameNode().getSymbol()?.compilerSymbol.escapedName ??
+    signature.getName()
   )
 }
 
@@ -402,7 +411,7 @@ To disable this warning, put comment "${suppressComment}" before the declaration
       ...declaration.getProperties(),
       ...declaration.getMethods(),
     ].map(p => ({
-      name: p.getSymbol()?.getEscapedName() ?? p.getName(),
+      name: propertyName(p),
       type: p.getType(),
     }))
     conditions.push(
