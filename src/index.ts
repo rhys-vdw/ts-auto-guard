@@ -1017,6 +1017,7 @@ function createAddDependency(dependencies: Dependencies): IAddDependency {
 export interface IProcessOptions {
   exportAll?: boolean
   importGuards?: string
+  importExtension?: string
   preventExportImported?: boolean
   shortCircuitCondition?: string
   debug?: boolean
@@ -1078,6 +1079,9 @@ export function processProject(
   project: Project,
   options: Readonly<IProcessOptions> = { debug: false }
 ): void {
+  const importExtension = options.importExtension
+    ? `.${options.importExtension}`
+    : ''
   const guardFileName = options.guardFileName || 'guard'
   if (guardFileName.match(/[*/]/))
     throw new Error('guardFileName must not contain special characters')
@@ -1193,7 +1197,8 @@ export function processProject(
             }
 
             let moduleSpecifier =
-              outFile.getRelativePathAsModuleSpecifierTo(importFile)
+              outFile.getRelativePathAsModuleSpecifierTo(importFile) +
+              importExtension
 
             if (importFile.isInNodeModules()) {
               // Packages within node_modules should not be referenced via relative path
@@ -1240,7 +1245,7 @@ export function processProject(
             .split('/')
             .reverse()[0]
             .replace(/\.(ts|tsx|d\.ts)$/, '')
-        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}";`
+        const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}${importExtension}";`
         const exportStatement = `export { ${options.importGuards} };`
         const { hasImport, hasExport, statements } = sourceFile
           .getStatements()
@@ -1248,7 +1253,7 @@ export function processProject(
             (reduced, node) => {
               const nodeText = node.getText().replace(/\s{2,}/g, ' ')
               reduced.hasImport ||= nodeText.includes(
-                `import * as ${options.importGuards}`
+                `import * as ${options.importGuards}${importExtension}`
               )
               reduced.hasExport ||= nodeText.includes(
                 `export { ${options.importGuards} }`

@@ -18,6 +18,7 @@ interface ICliOptions {
   debug?: boolean
   'export-all'?: boolean
   'import-guards'?: string
+  'import-extension'?: string
   'prevent-export-imported'?: boolean
   'guard-file-name'?: string
 }
@@ -50,6 +51,13 @@ const optionList = [
       'Adds TypeGuard import to source file, to also export TypeGuard from source use with --import-guards. Optionally accepts a string to choose custom import alias.',
     name: 'import-guards',
     typeLabel: '{underline TypeGuard}',
+    type: String,
+  },
+  {
+    description:
+      'Add extension to import statements in the generated guards file. Useful for adding .js extension for ESM resolution.',
+    name: 'import-extension',
+    typeLabel: '{underline extension}',
     type: String,
   },
   {
@@ -117,6 +125,7 @@ async function run() {
         debug: options.debug,
         exportAll: options['export-all'],
         importGuards: options['import-guards'],
+        importExtension: options['import-extension'],
         preventExportImported: options['prevent-export-imported'],
         shortCircuitCondition: options.shortcircuit,
         guardFileName: options['guard-file-name'],
