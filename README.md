@@ -176,3 +176,34 @@ import * as Guards from './Person.guard'
 
 export { Guards }
 ```
+
+## Add Custom File Extension to Import Statements
+
+By default, the import statements in generated files won't have any extension.
+However, this doesn't work with ESM, which requires `.js` extension for import statements.
+
+ts-auto-guard supports an `import-extension` flag to set a custom extension in import statements:
+
+```
+ts-auto-guard --import-extension="js"
+```
+
+This will result in the following:
+
+```ts
+// my-project/Person.guard.ts
+
+import { Person } from './Person.js'
+
+export function isPerson(obj: unknown): obj is Person {
+  if (process.env.NODE_ENV === 'production') {
+    return true
+  }
+  const typedObj = obj as Person
+  return (
+    typeof typedObj === 'object' &&
+    // ...normal conditions
+  )
+}
+```
+
