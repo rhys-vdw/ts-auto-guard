@@ -17,7 +17,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-    import { Branch1, Branch2, Branch3 } from "./test";
+    import type { Branch1, Branch2, Branch3 } from "./test";
 
     export function isBranch1(obj: unknown): obj is Branch1 {
         const typedObj = obj as Branch1

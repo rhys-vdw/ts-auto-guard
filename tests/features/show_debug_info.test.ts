@@ -21,7 +21,7 @@ testProcessProject(
   {
     [`foo/bar/test.ts`]: null,
     [`foo/bar/test.guard.ts`]: `
-    import { Foo, Bar } from "./test";
+    import type { Foo, Bar } from "./test";
 
     function evaluate(
       isCorrect: boolean,
