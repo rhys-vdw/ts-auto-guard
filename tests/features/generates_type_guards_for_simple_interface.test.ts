@@ -21,7 +21,9 @@ testProcessProject(
             (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
+            "foo" in typedObj &&
             typeof typedObj["foo"] === "number" &&
+            "bar" in typedObj &&
             typeof typedObj["bar"] === "string"
         )
     }`,
