@@ -70,15 +70,31 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
   addDependency(sourceFile, name, isDefault)
 }
 
-function outFilePath(sourcePath: string, guardFileName: string) {
+/**
+ * Computes the file name of the generated type guard.
+ * @param sourcePath Path of the file that is being analyzed for type information.
+ * @param guardFileName Suffix to append to the source file name to prevent conflict.
+ * @returns Computed file name of the newly generated type guard.
+ */
+function outFilePath(sourcePath: string, guardFileName: string): string {
+  /** Matches the file extension of the provided file if a MTS or CTS module mode is provided. */
+  const moduleFlagTest = /\.(mts|cts)$/u
+
+  /** Flag that indicates if a module mode was specified. */
+  const moduleMode = sourcePath.match(moduleFlagTest)
+
+  /** Name of the file to output the generated type guard. */
   const outPath = sourcePath.replace(
-    /\.(ts|tsx|d\.ts)$/,
-    `.${guardFileName}.ts`
+    /\.(ts|mts|cts|tsx|d\.ts)$/u,
+    `.${ guardFileName }.${ moduleMode ? moduleMode[0] : 'ts' }`
   )
-  if (outPath === sourcePath)
-    throw new Error(
-      'Internal Error: sourcePath and outFilePath are identical: ' + outPath
-    )
+
+  // Ensure that the new file name is not the same as the original file to prevent overwrite
+  if (outPath === sourcePath) {
+    throw new Error('Internal Error: sourcePath and outFilePath are identical: ' + outPath)
+  }
+
+  // Return the output path to the caller
   return outPath
 }
 
