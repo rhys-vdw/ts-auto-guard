@@ -1260,7 +1260,7 @@ export function processProject(
             .getFilePath()
             .split('/')
             .reverse()[0]
-            .replace(/\.(ts|tsx|d\.ts)$/, '')
+            .replace(/\.(ts|mts|cts|tsx|d\.ts)$/, '')
         const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}${importExtension}";`
         const exportStatement = `export { ${options.importGuards} };`
         const { hasImport, hasExport, statements } = sourceFile
