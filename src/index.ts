@@ -77,16 +77,16 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
  * @returns Computed file name of the newly generated type guard.
  */
 function outFilePath(sourcePath: string, guardFileName: string): string {
-  /** Matches the file extension of the provided file if a MTS or CTS module mode is provided. */
-  const moduleFlagTest = /\.(mts|cts)$/u
+  /** Flag that indicates if Common JS module mode was specified. */
+  const cjsModuleMode = sourcePath.endsWith('cts')
 
-  /** Flag that indicates if a module mode was specified. */
-  const moduleMode = sourcePath.match(moduleFlagTest)
+  /** Flag that indicates if ECMAScript Module mode was specified. */
+  const esmModuleMode = sourcePath.endsWith('mts')
 
   /** Name of the file to output the generated type guard. */
   const outPath = sourcePath.replace(
     /\.(ts|mts|cts|tsx|d\.ts)$/u,
-    `.${ guardFileName }.${ moduleMode ? moduleMode[0] : 'ts' }`
+    `.${guardFileName}.${cjsModuleMode ? 'cts' : esmModuleMode ? 'mts' : 'ts'}`
   )
 
   // Ensure that the new file name is not the same as the original file to prevent overwrite
