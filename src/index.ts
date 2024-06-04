@@ -91,7 +91,9 @@ function outFilePath(sourcePath: string, guardFileName: string): string {
 
   // Ensure that the new file name is not the same as the original file to prevent overwrite
   if (outPath === sourcePath) {
-    throw new Error('Internal Error: sourcePath and outFilePath are identical: ' + outPath)
+    throw new Error(
+      'Internal Error: sourcePath and outFilePath are identical: ' + outPath
+    )
   }
 
   // Return the output path to the caller
