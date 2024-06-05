@@ -10,8 +10,8 @@
     "build": "tsc",
     "prepare": "npm run build",
     "lint": "eslint .",
-    "format": "eslint --fix --ext ts && prettier --write *.json *.js *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml",
-    "format:check": "prettier --list-different *.json *.js *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml"
+    "format": "eslint --fix --ext ts && prettier --write *.json *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml",
+    "format:check": "prettier --list-different *.json *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
