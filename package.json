@@ -8,7 +8,7 @@
   "scripts": {
     "test": "npm run lint && npm run format:check && tape -r ts-node/register tests/**/*.test.ts | tap-diff",
     "build": "tsc",
-    "prepare": "npm run build",
+    "build:prod": "tsc --sourceMap false",
     "lint": "eslint .",
     "format": "eslint --fix --ext ts && prettier --write *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml",
     "format:check": "prettier --list-different *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml"
