@@ -18,6 +18,9 @@ import {
 
 const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
 
+/** Matches the supported file extensions of this project. */
+const fileExtensionRegex = /\.(ts|mts|cts|tsx|d\.ts)$/iu
+
 // -- Helpers --
 
 function reportError(message: string, ...args: unknown[]) {
@@ -85,7 +88,7 @@ function outFilePath(sourcePath: string, guardFileName: string): string {
 
   /** Name of the file to output the generated type guard. */
   const outPath = sourcePath.replace(
-    /\.(ts|mts|cts|tsx|d\.ts)$/u,
+    fileExtensionRegex,
     `.${guardFileName}.${cjsModuleMode ? 'cts' : esmModuleMode ? 'mts' : 'ts'}`
   )
 
@@ -1262,7 +1265,7 @@ export function processProject(
             .getFilePath()
             .split('/')
             .reverse()[0]
-            .replace(/\.(ts|mts|cts|tsx|d\.ts)$/, '')
+            .replace(fileExtensionRegex, '')
         const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}${importExtension}";`
         const exportStatement = `export { ${options.importGuards} };`
         const { hasImport, hasExport, statements } = sourceFile
