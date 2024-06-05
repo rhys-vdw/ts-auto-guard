@@ -18,6 +18,9 @@ import {
 
 const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
 
+/** Matches the supported file extensions of this project. */
+const fileExtensionRegex = /\.(ts|mts|cts|tsx|d\.ts)$/iu
+
 // -- Helpers --
 
 function reportError(message: string, ...args: unknown[]) {
@@ -70,15 +73,33 @@ function typeToDependency(type: Type, addDependency: IAddDependency): void {
   addDependency(sourceFile, name, isDefault)
 }
 
-function outFilePath(sourcePath: string, guardFileName: string) {
+/**
+ * Computes the file name of the generated type guard.
+ * @param sourcePath Path of the file that is being analyzed for type information.
+ * @param guardFileName Suffix to append to the source file name to prevent conflict.
+ * @returns Computed file name of the newly generated type guard.
+ */
+function outFilePath(sourcePath: string, guardFileName: string): string {
+  /** Flag that indicates if Common JS module mode was specified. */
+  const cjsModuleMode = sourcePath.endsWith('cts')
+
+  /** Flag that indicates if ECMAScript Module mode was specified. */
+  const esmModuleMode = sourcePath.endsWith('mts')
+
+  /** Name of the file to output the generated type guard. */
   const outPath = sourcePath.replace(
-    /\.(ts|tsx|d\.ts)$/,
-    `.${guardFileName}.ts`
+    fileExtensionRegex,
+    `.${guardFileName}.${cjsModuleMode ? 'cts' : esmModuleMode ? 'mts' : 'ts'}`
   )
-  if (outPath === sourcePath)
+
+  // Ensure that the new file name is not the same as the original file to prevent overwrite
+  if (outPath === sourcePath) {
     throw new Error(
       'Internal Error: sourcePath and outFilePath are identical: ' + outPath
     )
+  }
+
+  // Return the output path to the caller
   return outPath
 }
 
@@ -1244,7 +1265,7 @@ export function processProject(
             .getFilePath()
             .split('/')
             .reverse()[0]
-            .replace(/\.(ts|tsx|d\.ts)$/, '')
+            .replace(fileExtensionRegex, '')
         const importStatement = `import * as ${options.importGuards} from "${relativeOutPath}${importExtension}";`
         const exportStatement = `export { ${options.importGuards} };`
         const { hasImport, hasExport, statements } = sourceFile
