@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"name": "TS Auto Guard",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"node_modules": true
+		},
+		"search.exclude": {
+			"**/*.js": true,
+			"**/*.js.map": true
+		},
+		"cSpell.enableFiletypes": [
+			"github-actions-workflow"
+		],
+		"editor.formatOnSave": true,
+		"eslint.experimental.useFlatConfig": true
+	},
+	"extensions": {
+		"recommendations": [
+			"dbaeumer.vscode-eslint",
+			"streetsidesoftware.code-spell-checker",
+			"SocketSecurity.vscode-socket-security"
+		]
+	}
+}
