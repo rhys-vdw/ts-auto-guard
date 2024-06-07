@@ -13,7 +13,7 @@ testProcessProject(
   },
   {
     'test.ts': null,
-    'test.guard.ts': `"use strict";function isFoo(o){return!0}exports.__esModule=!0,exports.isFoo=void 0,exports.isFoo=isFoo;`,
+    'test.guard.ts': `"use strict";function isFoo(o){return!0}Object.defineProperty(exports,"__esModule",{value:!0}),exports.isFoo=void 0,exports.isFoo=isFoo;`,
   },
   {
     minifyOptions: {

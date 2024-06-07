@@ -1,7 +1,6 @@
 .github/
 .gitignore
 .travis.yml
-.eslintignore
-.eslintrc.js
+eslint.config.mjs
 .prettierrc
 src/
