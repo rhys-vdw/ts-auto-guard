@@ -1,6 +1,6 @@
 # ts-auto-guard
 
-![NPM Version](https://img.shields.io/npm/v/ts-auto-guard?link=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2Fts-auto-guard) [![Test](https://github.com/rhys-vdw/ts-auto-guard/actions/workflows/test.yml/badge.svg)](https://github.com/rhys-vdw/ts-auto-guard/actions/workflows/test.yml)
+[![NPM Version](https://img.shields.io/npm/v/ts-auto-guard)](https://www.npmjs.com/package/ts-auto-guard) [![Test](https://github.com/rhys-vdw/ts-auto-guard/actions/workflows/test.yml/badge.svg)](https://github.com/rhys-vdw/ts-auto-guard/actions/workflows/test.yml)
 
 > Generate type guard functions from TypeScript interfaces
 
