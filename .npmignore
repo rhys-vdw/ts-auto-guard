@@ -1,6 +1,8 @@
 .github/
-.gitignore
-.travis.yml
-eslint.config.mjs
-.prettierrc
+.vscode/
 src/
+tests/
+.gitignore
+.prettierrc
+TS Auto Guard.code-workspace
+eslint.config.mjs
