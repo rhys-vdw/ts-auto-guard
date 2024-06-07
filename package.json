@@ -12,8 +12,8 @@
     "build:prod": "tsc --sourceMap false",
     "lint": "eslint .",
     "preformat": "eslint --fix",
-    "format": "prettier --write *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml",
-    "format:check": "prettier --list-different *.yml src/**/*.ts tests/**/*.ts .github/**/*.yml"
+    "format": "prettier --write **/*.yml src/**/*.ts tests/**/*.ts",
+    "format:check": "prettier --list-different **/*.yml src/**/*.ts tests/**/*.ts"
   },
   "bin": {
     "ts-auto-guard": "./lib/cli.js"
