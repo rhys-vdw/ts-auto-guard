@@ -10,6 +10,9 @@ jobs:
   build:
     if: "!startsWith(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20
