@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       updateType:
-        description: "Update type ('patch', 'major', or 'minor')"
+        description: 'Update type'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
         required: true
 jobs:
   build:
