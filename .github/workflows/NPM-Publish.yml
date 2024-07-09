@@ -21,6 +21,23 @@ jobs:
         with:
           node-version: 20
 
+      - name: Ensure Synced Versions
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_LOCK_VERSION=$(node -p "require('./package-lock.json').version")
+          echo "Package version: $PACKAGE_VERSION"
+          echo "Package-lock version: $PACKAGE_LOCK_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch between package.json and git tag. Please increment the project before publishing!"
+            exit 1
+          fi
+          if [ "$PACKAGE_LOCK_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch between package-lock.json and git tag. Please increment the project before publishing!"
+            exit 1
+          fi
+
       - name: Install All Dependencies
         run: npm ci
 
