@@ -11,7 +11,7 @@ jobs:
   build-validate:
     name: Pre-Publish Validation
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Download Source Files
         uses: actions/checkout@v4
