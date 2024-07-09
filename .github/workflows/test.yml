@@ -2,7 +2,6 @@ name: Test
 on: pull_request
 jobs:
   test:
-    if: "!startsWith(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
