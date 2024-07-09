@@ -1,0 +1,63 @@
+# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
+
+name: Publish NPM Package
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  build-validate:
+    name: Pre-Publish Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download Source Files
+        uses: actions/checkout@v4
+
+      - name: Setup Node.JS Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install All Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run-script build
+
+      - name: Runt Unit Tests
+        run: npm run-script test
+
+  publish-package:
+    name: Publish to NPM
+    needs: build-validate
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download Source Files
+        uses: actions/checkout@v4
+
+      - name: Set up Node.JS Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Clean Install All Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run-script build:prod
+
+      - name: Clear All but Runtime Dependencies
+        run: npm ci --omit=dev
+
+      - name: Upload Package to NPM Registry
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
