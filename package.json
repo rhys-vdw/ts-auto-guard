@@ -23,7 +23,7 @@
   "dependencies": {
     "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.2",
-    "ts-morph": "^23.0.0",
+    "ts-morph": "^24.0.0",
     "tsconfig": "^7.0.0"
   },
   "devDependencies": {
