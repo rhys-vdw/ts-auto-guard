@@ -14,7 +14,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-    import { AnyOrString, UnknownOrString, AnyOrUnknownOrString } from "./test";
+    import type { AnyOrString, UnknownOrString, AnyOrUnknownOrString } from "./test";
 
     export function isAnyOrString(obj: unknown): obj is AnyOrString {
         const typedObj = obj as AnyOrString

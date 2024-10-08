@@ -14,7 +14,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-    import { AnyAndString, UnknownAndString, AnyAndUnknownAndString } from "./test";
+    import type { AnyAndString, UnknownAndString, AnyAndUnknownAndString } from "./test";
 
     export function isAnyAndString(obj: unknown): obj is AnyAndString {
         const typedObj = obj as AnyAndString
