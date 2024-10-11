@@ -15,7 +15,6 @@ import {
   Type,
   TypeAliasDeclaration,
 } from 'ts-morph'
-
 const GENERATED_WARNING = 'WARNING: Do not manually change this file.'
 
 /** Matches the supported file extensions of this project. */
@@ -194,7 +193,7 @@ function ors(...statements: string[]): string {
 }
 
 function ands(...statements: string[]): string {
-  return statements.join(' && \n')
+  return parens(statements.join(' && \n'))
 }
 
 function eq(a: string, b: string): string {
@@ -662,6 +661,8 @@ function typeConditions(
     if (type.isEnumLiteral()) {
       typeToDependency(type, addDependency)
     }
+    const unionTypes: string[] = []
+    type.getUnionTypes().forEach((t) => unionTypes.push(t.getText()))
     return typeUnionConditions(
       varName,
       type.getUnionTypes(),
