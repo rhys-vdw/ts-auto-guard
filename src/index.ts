@@ -1055,7 +1055,7 @@ const evaluateFunction = `function evaluate(
   isCorrect: boolean,
   varName: string,
   expected: string,
-  actual: any
+  actual: unknown
 ): boolean {
   if (!isCorrect) {
     console.error(
