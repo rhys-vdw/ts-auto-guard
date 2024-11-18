@@ -156,7 +156,7 @@ function getReadonlyArrayType(type: Type): Type | undefined {
 function getTypeGuardName(
   child: Guardable,
   options: IProcessOptions
-): string | null {
+): { kind: 'generated' | 'custom'; typeGuardName: string } | null {
   const jsDocs = child.getJsDocs()
   for (const doc of jsDocs) {
     for (const line of doc.getInnerText().split('\n')) {
@@ -165,11 +165,14 @@ function getTypeGuardName(
         .match(/@see\s+(?:{\s*(@link\s*)?(\w+)\s*}\s+)?ts-auto-guard:([^\s]*)/)
       if (match !== null) {
         const [, , typeGuardName, command] = match
-        if (command !== 'type-guard') {
-          reportError(`command ${command} is not supported!`)
-          return null
+        if (command === 'custom') {
+          return { kind: 'custom', typeGuardName }
         }
-        return typeGuardName
+        if (command === 'type-guard') {
+          return { kind: 'generated', typeGuardName }
+        }
+        reportError(`command ${command} is not supported!`)
+        return null
       }
     }
   }
@@ -181,7 +184,7 @@ function getTypeGuardName(
       .filter(x => x && x.getName() !== '__type')[0]
       ?.getName()
     if (name) {
-      return 'is' + name
+      return { kind: 'generated', typeGuardName: 'is' + name }
     }
   }
   return null
@@ -1163,32 +1166,44 @@ export function processProject(
     )
 
     for (const typeDeclaration of allTypesDeclarations) {
-      const typeGuardName = getTypeGuardName(typeDeclaration, options)
-      if (typeGuardName !== null) {
-        records.push({ guardName: typeGuardName, typeDeclaration, outFile })
+      const rule = getTypeGuardName(typeDeclaration, options)
+      if (rule !== null) {
+        const { kind, typeGuardName } = rule
+        if (kind === 'custom') {
+          records.push({
+            guardName: typeGuardName,
+            typeDeclaration,
+            outFile: sourceFile,
+          })
+        } else if (kind === 'generated') {
+          records.push({ guardName: typeGuardName, typeDeclaration, outFile })
+        }
       }
     }
 
     for (const typeDeclaration of allTypesDeclarations) {
-      const typeGuardName = getTypeGuardName(typeDeclaration, options)
-      if (typeGuardName !== null) {
-        functions.push(
-          generateTypeGuard(
-            typeGuardName,
-            typeDeclaration,
-            addDependency,
-            project,
-            records,
-            outFile,
-            options
+      const rule = getTypeGuardName(typeDeclaration, options)
+      if (rule !== null) {
+        const { kind, typeGuardName } = rule
+        if (kind === 'generated') {
+          functions.push(
+            generateTypeGuard(
+              typeGuardName,
+              typeDeclaration,
+              addDependency,
+              project,
+              records,
+              outFile,
+              options
+            )
           )
-        )
 
-        addDependency(
-          sourceFile,
-          typeDeclaration.getName(),
-          typeDeclaration.isDefaultExport()
-        )
+          addDependency(
+            sourceFile,
+            typeDeclaration.getName(),
+            typeDeclaration.isDefaultExport()
+          )
+        }
       }
     }
 

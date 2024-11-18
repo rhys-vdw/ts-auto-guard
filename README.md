@@ -206,3 +206,27 @@ export function isPerson(obj: unknown): obj is Person {
   )
 }
 ```
+
+## Use Custom Type-Guard Instead of Generating
+
+ts-auto-guard cannot generate type-guards for all typescript types automatically. For instance a validator for string template literals or branded types cannot be automatically genetrated. If you want to use a type which cannot be validated automatically you can use the annotation `/** @see {name} ts-auto-guard:type-guard */`, where `name` is a function exported by the current file:
+
+```ts
+// my-project/Person.ts
+
+/** @see {isPersonId} ts-auto-guard:custom */
+export type PersonId = number & { brand: true };
+
+export function isPersonId(x: unknown): x is string {
+  return typeof x === "number";
+  // or look up the identifier in a cache or database
+}
+
+/** @see {isPerson} ts-auto-guard:type-guard */
+export type Person = {
+  id: PersonId,
+  name: string
+}
+```
+
+in this example, the generated `isPerson` type-guard will delegate to the hand-written `isPersonId` for checking the type of the `id` field.
