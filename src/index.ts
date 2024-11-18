@@ -209,6 +209,14 @@ function typeOf(varName: string, type: string): string {
   return eq(`typeof ${varName}`, `"${type}"`)
 }
 
+function inOp(propName: string, varName: string): string {
+  return `"${propName}" in ${varName}`
+}
+
+function not(statement: string): string {
+  return `!(${statement})`
+}
+
 function typeUnionConditions(
   varName: string,
   types: Type[],
@@ -433,6 +441,7 @@ To disable this warning, put comment "${suppressComment}" before the declaration
       ...declaration.getMethods(),
     ].map(p => ({
       name: propertyName(p),
+      isOptional: p.hasQuestionToken(),
       type: p.getType(),
     }))
     conditions.push(
@@ -485,6 +494,7 @@ To disable this warning, put comment "${suppressComment}" before the declaration
             : p.getTypeAtLocation((typeDeclarations || [])[0])
         return {
           name: p.getName(),
+          isOptional: p.isOptional(),
           type: typeAtLocation,
         }
       })
@@ -751,7 +761,7 @@ function typeConditions(
 
 function propertyConditions(
   objName: string,
-  property: { name: string; type: Type },
+  property: { name: string; isOptional: boolean; type: Type },
   addDependency: IAddDependency,
   project: Project,
   path: string,
@@ -759,7 +769,7 @@ function propertyConditions(
   records: readonly IRecord[],
   outFile: SourceFile,
   options: IProcessOptions
-): string | null {
+): string {
   const { debug } = options
   const propertyName = property.name
 
@@ -768,18 +778,28 @@ function propertyConditions(
   const propertyPath = `${path}["${strippedName}"]`
 
   let expectedType = property.type.getText()
-  const conditions = typeConditions(
-    varName,
-    property.type,
-    addDependency,
-    project,
-    propertyPath,
-    arrayDepth,
-    true,
-    records,
-    outFile,
-    options
+  const hasPropertyCondition = inOp(strippedName, objName)
+  let conditions = ands(
+    ...([
+      hasPropertyCondition,
+      typeConditions(
+        varName,
+        property.type,
+        addDependency,
+        project,
+        propertyPath,
+        arrayDepth,
+        true,
+        records,
+        outFile,
+        options
+      ),
+    ].filter(v => v != null) as string[])
   )
+  if (property.isOptional) {
+    conditions = ors(not(hasPropertyCondition), conditions)
+  }
+
   if (debug) {
     if (expectedType.indexOf('import') > -1) {
       const standardizedCwd = FileUtils.standardizeSlashes(process.cwd())
@@ -797,7 +817,7 @@ function propertyConditions(
 
 function propertiesConditions(
   varName: string,
-  properties: ReadonlyArray<{ name: string; type: Type }>,
+  properties: ReadonlyArray<{ name: string; isOptional: boolean; type: Type }>,
   addDependency: IAddDependency,
   project: Project,
   path: string,
@@ -806,21 +826,19 @@ function propertiesConditions(
   outFile: SourceFile,
   options: IProcessOptions
 ): string[] {
-  return properties
-    .map(prop =>
-      propertyConditions(
-        varName,
-        prop,
-        addDependency,
-        project,
-        path,
-        arrayDepth,
-        records,
-        outFile,
-        options
-      )
+  return properties.map(prop =>
+    propertyConditions(
+      varName,
+      prop,
+      addDependency,
+      project,
+      path,
+      arrayDepth,
+      records,
+      outFile,
+      options
     )
-    .filter(v => v !== null) as string[]
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
