@@ -13,7 +13,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-      import { TestType, SecondaryTestType } from "./test";
+      import type { TestType, SecondaryTestType } from "./test";
 
       export function isTestType(obj: unknown): obj is TestType {
           const typedObj = obj as TestType

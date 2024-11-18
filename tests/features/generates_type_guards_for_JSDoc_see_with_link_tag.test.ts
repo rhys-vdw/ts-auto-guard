@@ -10,7 +10,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-    import { Bool } from "./test";
+    import type { Bool } from "./test";
 
     export function isBool(obj: unknown): obj is Bool {
         const typedObj = obj as Bool

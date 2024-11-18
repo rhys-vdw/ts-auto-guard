@@ -33,7 +33,7 @@ for (const propertyName of nonAlphanumericCharacterPropertyNames) {
     {
       'test.ts': null,
       'test.guard.ts': `
-    import { Foo } from "./test";
+    import type { Foo } from "./test";
 
     export function isFoo(obj: unknown): obj is Foo {
         const typedObj = obj as Foo
@@ -59,7 +59,7 @@ for (const propertyName of nonAlphanumericCharacterPropertyNames) {
     {
       'test.ts': null,
       'test.guard.ts': `
-    import { Foo } from "./test";
+    import type { Foo } from "./test";
 
     export function isFoo(obj: unknown): obj is Foo {
         const typedObj = obj as Foo
