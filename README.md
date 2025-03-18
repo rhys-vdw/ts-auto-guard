@@ -8,6 +8,9 @@ A tool for automatically generating TypeScript [type guards](https://www.typescr
 
 This tool aims to allow developers to verify data from untyped sources to ensure it conforms to TypeScript types. For example when initializing a data store or receiving structured data in an AJAX response.
 
+> [!WARNING]
+> This project is largely unmaintained and has a few issues. Try out https://typia.io/, it looks superior.
+
 ## Install
 
 ### Yarn
