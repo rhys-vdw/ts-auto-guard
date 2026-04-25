@@ -23,17 +23,11 @@ testProcessProject(
     [`foo/bar/test.guard.ts`]: `
     import { Foo, Bar } from "./test";
 
-    function evaluate(
-      isCorrect: boolean,
-      varName: string,
-      expected: string,
-      actual: any
-    ): boolean {
+    let __evaluateBuffer: Array<unknown[]> | null = null
+    function evaluate(isCorrect: boolean, varName: string, expected: string, actual: any): boolean {
       if (!isCorrect) {
-        console.error(
-          \`\${varName} type mismatch, expected: \${expected}, found:\`,
-                      actual
-          )
+        const args: unknown[] = [\`\${varName} type mismatch, expected: \${expected}, found:\`, actual]
+        __evaluateBuffer ? __evaluateBuffer.push(args) : console.error(...args)
       }
       return isCorrect
     }
@@ -45,10 +39,10 @@ testProcessProject(
           typeof typedObj === "object" ||
           typeof typedObj === "function") &&
           evaluate(typeof typedObj["foo"] === "number", \`\${argumentName}["foo"]\`, "number", typedObj["foo"]) &&
-          evaluate(isBar(typedObj["bar"]) as boolean, \`\${argumentName}["bar"]\`, "import(\\"/foo/bar/test\\").Bar", typedObj["bar"]) &&
+          evaluate(isBar(typedObj["bar"], \`\${argumentName}["bar"]\`) as boolean, \`\${argumentName}["bar"]\`, "import(\\"/foo/bar/test\\").Bar", typedObj["bar"]) &&
           evaluate(Array.isArray(typedObj["bars"]) &&
-            typedObj["bars"].every((e: any) =>
-              isBar(e) as boolean
+            typedObj["bars"].every((e: any, i0: number) =>
+              isBar(e, \`\${argumentName}["bars"][\${i0}]\`) as boolean
             ), \`\${argumentName}["bars"]\`, "import(\\"/foo/bar/test\\").Bar[]", typedObj["bars"])
         )
     }

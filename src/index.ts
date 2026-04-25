@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { FileUtils } from '@ts-morph/common'
 import {
   EnumDeclaration,
   ExportableNode,
@@ -25,6 +24,12 @@ const fileExtensionRegex = /\.(ts|mts|cts|tsx|d\.ts)$/iu
 
 function reportError(message: string, ...args: unknown[]) {
   console.error(`ERROR: ${message}`, ...args)
+}
+
+// Strip the project root from absolute paths so debug output stays OS-agnostic
+function relativizeImports(text: string, outFile: SourceFile): string {
+  const projectDir = outFile.getProject().getFileSystem().getCurrentDirectory()
+  return projectDir === '/' ? text : text.replaceAll(projectDir, '.')
 }
 
 function lowerFirst(s: string): string {
@@ -220,26 +225,33 @@ function typeUnionConditions(
   outFile: SourceFile,
   options: IProcessOptions
 ): string {
-  const conditions: string[] = []
-  conditions.push(
-    ...(types
-      .map(type =>
-        typeConditions(
-          varName,
-          type,
-          addDependency,
-          project,
-          path,
-          arrayDepth,
-          true,
-          records,
-          outFile,
-          options
-        )
+  const branchConditions = types
+    .map(type =>
+      typeConditions(
+        varName,
+        type,
+        addDependency,
+        project,
+        path,
+        arrayDepth,
+        true,
+        records,
+        outFile,
+        options
       )
-      .filter(v => v !== null) as string[])
-  )
-  return ors(...conditions)
+    )
+    .filter(v => v !== null) as string[]
+  if (options.debug) {
+    const expectedType = relativizeImports(
+      types.map(t => t.getText()).join(' | '),
+      outFile
+    )
+    const branchFns = branchConditions.map(c => `() => (${c})`).join(', ')
+    return `evaluateUnion(\`${path}\`, ${JSON.stringify(
+      expectedType
+    )}, ${varName}, ${branchFns})`
+  }
+  return ors(...branchConditions)
 }
 
 function typeIntersectionConditions(
@@ -616,12 +628,19 @@ function reusedCondition(
   records: readonly IRecord[],
   outFile: SourceFile,
   addDependency: IAddDependency,
-  varName: string
+  varName: string,
+  path: string,
+  debug: boolean
 ): string | null {
   const record = records.find(x => x.typeDeclaration.getType() === type)
   if (record) {
     if (record.outFile !== outFile) {
       addDependency(record.outFile, record.guardName, false)
+    }
+    // Pass the caller's path as argumentName so the called guard's logs use
+    // the caller's location instead of its own default name.
+    if (debug) {
+      return `${record.guardName}(${varName}, \`${path}\`) as boolean`
     }
     return `${record.guardName}(${varName}) as boolean`
   }
@@ -640,7 +659,15 @@ function typeConditions(
   outFile: SourceFile,
   options: IProcessOptions
 ): string | null {
-  const reused = reusedCondition(type, records, outFile, addDependency, varName)
+  const reused = reusedCondition(
+    type,
+    records,
+    outFile,
+    addDependency,
+    varName,
+    path,
+    options.debug === true
+  )
   if (useGuard && reused) {
     return reused
   }
@@ -767,7 +794,6 @@ function propertyConditions(
   const varName = `${objName}["${strippedName}"]`
   const propertyPath = `${path}["${strippedName}"]`
 
-  let expectedType = property.type.getText()
   const conditions = typeConditions(
     varName,
     property.type,
@@ -781,10 +807,10 @@ function propertyConditions(
     options
   )
   if (debug) {
-    if (expectedType.indexOf('import') > -1) {
-      const standardizedCwd = FileUtils.standardizeSlashes(process.cwd())
-      expectedType = expectedType.replace(standardizedCwd, '.')
-    }
+    // Union types self-report via evaluateUnion (inline) or the called
+    // guard's own evaluateUnion (named). Wrapping again would duplicate.
+    if (property.type.isUnion()) return conditions
+    const expectedType = relativizeImports(property.type.getText(), outFile)
     return (
       conditions &&
       `evaluate(${conditions}, \`${propertyPath}\`, ${JSON.stringify(
@@ -858,7 +884,7 @@ function indexSignatureConditions(
   options: IProcessOptions
 ): string | null {
   const { debug } = options
-  const expectedType = index.type.getText()
+  const expectedType = relativizeImports(index.type.getText(), outFile)
   const conditions = typeConditions(
     objName,
     index.type,
@@ -880,11 +906,13 @@ function indexSignatureConditions(
   }
   if (debug) {
     const cleanKeyReplacer = '${key.toString().replace(/"/g, \'\\\\"\')}'
-    const evaluation =
-      conditions &&
-      `evaluate(${conditions}, \`${path}["${cleanKeyReplacer}"]\`, ${JSON.stringify(
-        expectedType
-      )}, ${objName})`
+    // Union value types self-report; wrapping again would duplicate.
+    const evaluation = index.type.isUnion()
+      ? conditions
+      : conditions &&
+        `evaluate(${conditions}, \`${path}["${cleanKeyReplacer}"]\`, ${JSON.stringify(
+          expectedType
+        )}, ${objName})`
     const keyEvaluation =
       keyConditions &&
       `evaluate(${keyConditions}, \`${path} (key: "${cleanKeyReplacer}")\`, ${JSON.stringify(
@@ -1051,20 +1079,40 @@ export interface IGenerateOptions {
   processOptions: Readonly<IProcessOptions>
 }
 
-const evaluateFunction = `function evaluate(
-  isCorrect: boolean,
-  varName: string,
-  expected: string,
-  actual: any
-): boolean {
+const evaluateBufferDecl = `let __evaluateBuffer: Array<unknown[]> | null = null\n`
+const evaluateFn = `function evaluate(isCorrect: boolean, varName: string, expected: string, actual: any): boolean {
   if (!isCorrect) {
-    console.error(
-      \`\${varName} type mismatch, expected: \${expected}, found:\`,
-      actual
-    )
+    const args: unknown[] = [\`\${varName} type mismatch, expected: \${expected}, found:\`, actual]
+    __evaluateBuffer ? __evaluateBuffer.push(args) : console.error(...args)
   }
   return isCorrect
 }\n`
+const evaluateUnionFn = `function evaluateUnion(varName: string, expected: string, actual: any, ...branches: Array<() => boolean>): boolean {
+  const previous = __evaluateBuffer
+  const collected: Array<unknown[]> = []
+  for (const fn of branches) {
+    const branchBuffer: Array<unknown[]> = []
+    __evaluateBuffer = branchBuffer
+    if (fn()) { __evaluateBuffer = previous; return true }
+    collected.push(...branchBuffer)
+  }
+  __evaluateBuffer = previous
+  collected.push([\`\${varName} type mismatch, expected: \${expected}, found:\`, actual])
+  if (previous) collected.forEach(a => previous.push(a))
+  else collected.forEach(a => console.error(...a))
+  return false
+}\n`
+
+function buildEvaluateHelpers(body: string): string {
+  const usesEvaluate = body.includes('evaluate(')
+  const usesEvaluateUnion = body.includes('evaluateUnion(')
+  if (!usesEvaluate && !usesEvaluateUnion) return ''
+  return (
+    evaluateBufferDecl +
+    (usesEvaluate ? evaluateFn : '') +
+    (usesEvaluateUnion ? evaluateUnionFn : '')
+  )
+}
 
 export async function generate({
   paths = [],
@@ -1194,7 +1242,8 @@ export function processProject(
 
     if (functions.length > 0) {
       if (options.debug) {
-        functions.unshift(evaluateFunction)
+        const helpers = buildEvaluateHelpers(functions.join('\n'))
+        if (helpers) functions.unshift(helpers)
       }
 
       outFile.addStatements(functions.join('\n'))

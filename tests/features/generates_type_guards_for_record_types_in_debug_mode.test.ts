@@ -13,17 +13,11 @@ testProcessProject(
     'test.guard.ts': `
       import { TestType } from "./test";
   
-      function evaluate(
-        isCorrect: boolean,
-        varName: string,
-        expected: string,
-        actual: any
-      ): boolean {
+      let __evaluateBuffer: Array<unknown[]> | null = null
+      function evaluate(isCorrect: boolean, varName: string, expected: string, actual: any): boolean {
         if (!isCorrect) {
-          console.error(
-            \`\${varName} type mismatch, expected: \${expected}, found:\`,
-                        actual
-            )
+          const args: unknown[] = [\`\${varName} type mismatch, expected: \${expected}, found:\`, actual]
+          __evaluateBuffer ? __evaluateBuffer.push(args) : console.error(...args)
         }
         return isCorrect
       }
