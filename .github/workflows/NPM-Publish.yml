@@ -53,6 +53,7 @@ jobs:
     name: Publish to NPM
     needs: build-validate
     runs-on: ubuntu-latest
+    environment: admin
     permissions:
       id-token: write
       contents: read
@@ -66,6 +67,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+          always-auth: true
 
       - name: Clean Install All Dependencies
         run: npm ci
