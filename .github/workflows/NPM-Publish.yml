@@ -24,7 +24,8 @@ jobs:
 
       - name: Ensure Synced Versions
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/}
+          RAW_TAG=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${RAW_TAG#v}
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           PACKAGE_LOCK_VERSION=$(node -p "require('./package-lock.json').version")
           echo "Package version: $PACKAGE_VERSION"
