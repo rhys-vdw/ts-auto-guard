@@ -3,7 +3,10 @@
   "version": "5.1.2",
   "description": "Generate type guard functions from TypeScript interfaces",
   "homepage": "https://github.com/rhys-vdw/ts-auto-guard",
-  "repository": "github:rhys-vdw/ts-auto-guard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rhys-vdw/ts-auto-guard.git"
+  },
   "main": "lib/index.js",
   "scripts": {
     "pretest": "npm run-script lint && npm run-script format:check",
@@ -16,7 +19,7 @@
     "format:check": "prettier --list-different **/*.yml src/**/*.ts tests/**/*.ts"
   },
   "bin": {
-    "ts-auto-guard": "./lib/cli.js"
+    "ts-auto-guard": "lib/cli.js"
   },
   "author": "Rhys van der Waerden",
   "license": "MIT",
