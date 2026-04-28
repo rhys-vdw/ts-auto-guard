@@ -209,3 +209,73 @@ export function isPerson(obj: unknown): obj is Person {
   )
 }
 ```
+
+## Use Custom Type-Guard Instead of Generating
+
+ts-auto-guard cannot generate type-guards for every possible type, and even when it can, sometimes it's better to use a pre-existing validator. Annotate the type with `/** @see {name} ts-auto-guard:custom */`, where `name` is a function exported from the current file, and ts-auto-guard will delegate to the named function instead of auto-generating a guard. 
+
+Three common use-cases:
+
+### 1. Branded/nominal types
+
+[Branded](https://www.learningtypescript.com/articles/branded-types) and nominal types carry a marker that's only visible to the type-system, and absent at runtime. So there's no way for ts-auto-guard to generate a structural check to validate such types. Instead you decide what the runtime invariant is, and provide the custom guard.
+
+```ts
+/** @see {isPersonId} ts-auto-guard:custom */
+export type PersonId = number & { brand: true }
+
+export function isPersonId(x: unknown): x is PersonId {
+  return typeof x === 'number'
+  // or look up the id in a cache or database
+  // or just return true
+}
+```
+
+### 2. Template literal types
+
+Guards for [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html) are not yet auto-generated. To validate them you must provide a custom guard.
+
+```ts
+/** @see {isHexColor} ts-auto-guard:custom */
+export type HexColor = `#${string}`
+
+export function isHexColor(x: unknown): x is HexColor {
+  return typeof x === 'string' && /^#[0-9a-fA-F]{6}$/.test(x)
+}
+```
+
+Unlike branding, the guard is still structural, but currently impossible for ts-auto-guard to generate.
+
+### 3. Delegating to another validator
+
+If you need to incorporate a type with a pre-existing validator, you can delegate to it. For example, with a [zod](https://zod.dev/) schema:
+
+```ts
+import { z } from 'zod'
+
+export const AddressSchema = z.object({
+  street: z.string(),
+  city: z.string(),
+  postcode: z.string(),
+})
+
+export function isAddress(x: unknown): x is Address {
+  return AddressSchema.safeParse(x).success
+}
+
+/** @see {isAddress} ts-auto-guard:custom */
+export type Address = z.infer<typeof AddressSchema>
+```
+
+### Custom and auto-generated guards are composable
+
+Once you have defined custom guards you can use them directly in composite types and ts-auto-guard will delegate to the provided guards when auto-generating the composite guard function:
+
+```ts
+/** @see {isPerson} ts-auto-guard:type-guard */
+export type Person = {
+  id: PersonId       // checked via isPersonId
+  address: Address   // checked via isAddress (zod under the hood)
+  name: string       // checked by auto-generated code
+}
+```
