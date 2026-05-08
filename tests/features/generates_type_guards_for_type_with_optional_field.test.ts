@@ -5,7 +5,7 @@ testProcessProject(
   {
     'test.ts': `
     /** @see {isFoo} ts-auto-guard:type-guard */
-    export interface Foo {
+    export type Foo {
       foo?: number,
       bar: number | undefined,
       baz?: number | undefined
@@ -22,17 +22,17 @@ testProcessProject(
         (typedObj !== null &&
             typeof typedObj === "object" ||
             typeof typedObj === "function") &&
-        ( !("foo" in typedObj) ||
+        (!("foo" in typedObj) ||
             "foo" in typedObj &&
             (typeof typedObj["foo"] === "undefined" ||
-                typeof typedObj["foo"] === "number" )) &&
+                typeof typedObj["foo"] === "number")) &&
         "bar" in typedObj &&
-        ( typeof typedObj["bar"] === "undefined" ||
-            typeof typedObj["bar"] === "number" ) &&
-        ( !("baz" in typedObj) ||
+        (typeof typedObj["bar"] === "undefined" ||
+            typeof typedObj["bar"] === "number") &&
+        (!("baz" in typedObj) ||
             "baz" in typedObj &&
             (typeof typedObj["baz"] === "undefined" ||
-                typeof typedObj["baz"] === "number" ))
+                typeof typedObj["baz"] === "number"))
       )
     }`,
   }
