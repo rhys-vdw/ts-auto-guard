@@ -18,7 +18,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.guard.ts': `
-     import { PropertyValueType, PropertyName, Foo } from "./test";
+     import type { PropertyValueType, PropertyName, Foo } from "./test";
 
      export function isPropertyValueType(obj: unknown): obj is PropertyValueType {
         const typedObj = obj as PropertyValueType

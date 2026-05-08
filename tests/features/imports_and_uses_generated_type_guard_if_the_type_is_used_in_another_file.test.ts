@@ -20,8 +20,8 @@ testProcessProject(
     'test.ts': null,
     'test-list.ts': null,
     'test-list.guard.ts': `
-      import { isTestType } from "./test.guard";
-      import { TestTypeList } from "./test-list";
+      import type { isTestType } from "./test.guard";
+      import type { TestTypeList } from "./test-list";
 
       export function isTestTypeList(obj: unknown): obj is TestTypeList {
           const typedObj = obj as TestTypeList
@@ -34,7 +34,7 @@ testProcessProject(
       }
       `,
     'test.guard.ts': `
-        import { TestType } from "./test";
+        import type { TestType } from "./test";
 
         export function isTestType(obj: unknown): obj is TestType {
             const typedObj = obj as TestType

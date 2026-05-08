@@ -13,7 +13,7 @@ testProcessProject(
   {
     'test.ts': null,
     'test.debug.ts': `
-    import { Foo } from "./test";
+    import type { Foo } from "./test";
 
     export function isFoo(obj: unknown): obj is Foo {
         const typedObj = obj as Foo

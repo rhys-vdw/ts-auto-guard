@@ -83,7 +83,7 @@ const blueprints = [
 export interface Foo {
   target: DirEntry
 }`,
-    guardFile: `import { Foo } from "./ImportTest";
+    guardFile: `import type { Foo } from "./ImportTest";
 
 export function isFoo(obj: unknown): obj is Foo {
     const typedObj = obj as Foo
@@ -112,7 +112,7 @@ export function isFoo(obj: unknown): obj is Foo {
 export interface Foo {
   target: ResolutionHostFactory
 }`,
-    guardFile: `import { Foo } from "./ImportTest";
+    guardFile: `import type { Foo } from "./ImportTest";
 
 export function isFoo(obj: unknown): obj is Foo {
     const typedObj = obj as Foo
@@ -131,8 +131,8 @@ export function isFoo(obj: unknown): obj is Foo {
 export interface Foo {
   target: CompilerOptionsContainer
 }`,
-    guardFile: `import { CompilerOptionsContainer } from "@ts-morph/common";
-import { Foo } from "./ImportTest";
+    guardFile: `import type { CompilerOptionsContainer } from "@ts-morph/common";
+import type { Foo } from "./ImportTest";
 
 export function isFoo(obj: unknown): obj is Foo {
     const typedObj = obj as Foo
@@ -153,8 +153,8 @@ export interface Foo {
   res: TsConfigResolver,
   fs: InMemoryFileSystemHost
 }`,
-    guardFile: `import { CompilerOptionsContainer, TsConfigResolver, InMemoryFileSystemHost } from "@ts-morph/common";
-import { Foo } from "./ImportTest";
+    guardFile: `import type { CompilerOptionsContainer, TsConfigResolver, InMemoryFileSystemHost } from "@ts-morph/common";
+import type { Foo } from "./ImportTest";
 
 export function isFoo(obj: unknown): obj is Foo {
     const typedObj = obj as Foo
@@ -175,8 +175,8 @@ export function isFoo(obj: unknown): obj is Foo {
 export interface Foo {
   dir: Directory
 }`,
-    guardFile: `import { Directory } from "ts-morph";
-import { Foo } from "./ImportTest";
+    guardFile: `import type { Directory } from "ts-morph";
+import type { Foo } from "./ImportTest";
 
 export function isFoo(obj: unknown): obj is Foo {
     const typedObj = obj as Foo

@@ -17,7 +17,7 @@ testProcessProject(
     * Generated type guards for "custom.ts".
     * WARNING: Do not manually change this file.
     */
-    import { Color } from "./custom";
+    import type { Color } from "./custom";
 
     export function isColor(obj: unknown): obj is Color {
         const typedObj = obj as Color
@@ -46,7 +46,7 @@ testProcessProject(
     * Generated type guards for "custom.ts".
     * WARNING: Do not manually change this file.
     */
-    import { Color } from "./custom";
+    import type { Color } from "./custom";
 
     export function isColor(obj: unknown): obj is Color {
         const typedObj = obj as Color
